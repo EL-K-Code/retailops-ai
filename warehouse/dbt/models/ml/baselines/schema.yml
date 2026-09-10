@@ -1,0 +1,67 @@
+version: 2
+
+models:
+  - name: ml_rmsse_scale
+    description: "Per-series M5-style RMSSE denominator estimated from the training window after first non-zero demand."
+    columns:
+      - name: series_id
+        data_tests: [not_null, unique]
+      - name: rmsse_scale
+        data_tests: [not_null]
+      - name: scale_observations
+        data_tests: [not_null]
+
+  - name: ml_baseline_predictions
+    description: "Leakage-safe 28-day validation predictions for last-value, seasonal-7, and seasonal-28 naive baselines."
+    columns:
+      - name: series_id
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+      - name: forecast_step
+        data_tests: [not_null]
+      - name: actual_units_sold
+        data_tests: [not_null]
+      - name: naive_last_prediction
+        data_tests: [not_null]
+      - name: seasonal_naive_7_prediction
+        data_tests: [not_null]
+      - name: seasonal_naive_28_prediction
+        data_tests: [not_null]
+
+  - name: ml_baseline_series_metrics
+    description: "Validation error metrics at series x baseline grain."
+    columns:
+      - name: series_id
+        data_tests: [not_null]
+      - name: baseline
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["naive_last", "seasonal_naive_7", "seasonal_naive_28"]
+      - name: forecast_days
+        data_tests: [not_null]
+      - name: rmsse
+        data_tests: [not_null]
+
+  - name: ml_baseline_metrics
+    description: "Bottom-level validation summary used to compare simple forecasting baselines before model development."
+    columns:
+      - name: baseline
+        data_tests:
+          - not_null
+          - unique
+          - accepted_values:
+              arguments:
+                values: ["naive_last", "seasonal_naive_7", "seasonal_naive_28"]
+      - name: series_count
+        data_tests: [not_null]
+      - name: evaluated_observations
+        data_tests: [not_null]
+      - name: mae
+        data_tests: [not_null]
+      - name: rmse
+        data_tests: [not_null]
+      - name: mean_rmsse
+        data_tests: [not_null]

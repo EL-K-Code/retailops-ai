@@ -56,7 +56,8 @@ Implemented so far:
 - dbt STAGING transformations with long-format sales, data tests, partitioning and clustering;
 - dbt SILVER warehouse model with reusable date/product/store dimensions and daily-sales/weekly-price facts;
 - dbt GOLD marts for item-store demand, store-day summaries, and product-day summaries with explicit price-coverage semantics;
-- leakage-aware 28-day demand-forecasting contract with fixed chronological train, validation, and test windows.
+- leakage-aware 28-day demand-forecasting contract with fixed chronological train, validation, and test windows;
+- leakage-safe last-value, seasonal-7, and seasonal-28 baselines with MAE, RMSE, and bottom-level mean RMSSE evaluation.
 
 Cloud-side execution remains an environment-specific validation step.
 
@@ -66,6 +67,7 @@ Cloud-side execution remains an environment-specific validation step.
 - Business transformations belong in explicit transformation layers.
 - Temporal ML problems use temporal validation rather than random splits.
 - Forecast features respect as-of-time availability and must not use future target information.
+- Simple baselines establish a minimum performance bar before learned models are introduced.
 - Secrets and credentials are never committed to Git.
 - New infrastructure is introduced only when it solves a concrete problem.
 - A technology is considered part of the implemented stack only after it has actually been used and validated in the project.
@@ -80,6 +82,7 @@ Dataset
   -> dbt SILVER
   -> dbt GOLD / MARTS
   -> dbt ML temporal contract
+  -> validation baselines
 ```
 
 The public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the demand-forecasting use case.
@@ -96,6 +99,16 @@ Test:       2016-04-25 -> 2016-05-22
 
 The final test window remains untouched during model and feature selection.
 
+Current validation baselines:
+
+```text
+Last value
+Seasonal naive (7 days)
+Seasonal naive (28 days)
+```
+
+Baseline comparison reports MAE, RMSE, and unweighted mean RMSSE across bottom-level item-store series. The official competition WRMSSE is intentionally deferred because it additionally requires hierarchical aggregation and value-based weighting.
+
 ## Status
 
-V1 Data Engineering code complete. V2.1 forecasting dataset contract implemented; end-to-end cloud execution validation pending.
+V1 Data Engineering code complete. V2.2 leakage-safe baseline framework implemented; cloud score execution and learned-model development remain pending.

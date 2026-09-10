@@ -32,3 +32,5 @@ models:
     ml:
       +schema: ml
       +tags: ["ml"]
+      baselines:
+        +tags: ["baseline"]
