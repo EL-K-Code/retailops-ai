@@ -11,7 +11,7 @@ from retailops_ai.ingestion.m5_profile import (
 
 
 def _write_csv(path: Path, header: tuple[str, ...], rows: list[tuple[str, ...]]) -> None:
-    content = [",".join(header), *( ",".join(row) for row in rows )]
+    content = [",".join(header), *(",".join(row) for row in rows)]
     path.write_text("\n".join(content) + "\n", encoding="utf-8")
 
 
