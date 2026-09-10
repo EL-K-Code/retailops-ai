@@ -30,6 +30,9 @@ Thumbs.db
 /data/*
 !/data/README.md
 
+# Local ML artifacts
+artifacts/
+
 # dbt generated files
 warehouse/dbt/target/
 warehouse/dbt/logs/
