@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: mart_demand_daily
+    description: "Daily demand mart at item-store-date grain, enriched with product, store, calendar, SNAP, event, and weekly price context."
+    columns:
+      - name: series_id
+        description: "Original M5 item-store series identifier."
+      - name: date
+        description: "Demand observation date and partition key."
+      - name: item_id
+        description: "M5 product identifier."
+      - name: store_id
+        description: "M5 store identifier."
+      - name: units_sold
+        description: "Observed daily units sold."
+      - name: sell_price
+        description: "Weekly M5 sell price when available for the item-store-week."
+      - name: estimated_sales_value
+        description: "Units sold multiplied by the available weekly sell price; null when price is unavailable."
+      - name: price_available
+        description: "True when a weekly sell price is available for the observation."
+      - name: snap_active
+        description: "State-specific SNAP indicator selected from the M5 calendar."
+      - name: event_name_1
+        description: "First M5 calendar event name, when present."
+      - name: event_name_2
+        description: "Second M5 calendar event name, when present."
+
+  - name: mart_store_daily_sales
+    description: "Daily store-level sales summary derived from mart_demand_daily."
+    columns:
+      - name: date
+        description: "Summary date."
+      - name: store_id
+        description: "M5 store identifier."
+      - name: total_units_sold
+        description: "Total observed units sold by the store on the date."
+      - name: active_item_count
+        description: "Number of items with positive unit sales."
+      - name: estimated_sales_value
+        description: "Sum of item-level estimated sales value where prices are available."
+      - name: price_coverage_rate
+        description: "Share of item rows with an available sell price."
+
+  - name: mart_product_daily_sales
+    description: "Daily product-level sales summary across stores derived from mart_demand_daily."
+    columns:
+      - name: date
+        description: "Summary date."
+      - name: item_id
+        description: "M5 product identifier."
+      - name: total_units_sold
+        description: "Total observed units sold across stores on the date."
+      - name: stores_with_sales
+        description: "Number of stores with positive unit sales."
+      - name: estimated_sales_value
+        description: "Sum of store-level estimated sales value where prices are available."
+      - name: price_coverage_rate
+        description: "Share of store rows with an available sell price."

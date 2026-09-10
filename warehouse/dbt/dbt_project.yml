@@ -17,3 +17,6 @@ models:
     silver:
       +schema: silver
       +tags: ["silver"]
+    gold:
+      +schema: gold
+      +tags: ["gold"]

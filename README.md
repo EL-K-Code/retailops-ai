@@ -54,7 +54,8 @@ Implemented so far:
 - immutable GCS landing uploader with SHA-256 traceability and create-only upload semantics;
 - BigQuery RAW loader with explicit schemas, deterministic table rebuilds and row-count validation;
 - dbt STAGING transformations with long-format sales, data tests, partitioning and clustering;
-- dbt SILVER warehouse model with reusable date/product/store dimensions and daily-sales/weekly-price facts.
+- dbt SILVER warehouse model with reusable date/product/store dimensions and daily-sales/weekly-price facts;
+- dbt GOLD marts for item-store demand, store-day summaries, and product-day summaries with explicit price-coverage semantics.
 
 Cloud-side execution remains an environment-specific validation step.
 
@@ -67,14 +68,14 @@ Cloud-side execution remains an environment-specific validation step.
 - New infrastructure is introduced only when it solves a concrete problem.
 - A technology is considered part of the implemented stack only after it has actually been used and validated in the project.
 
-## Planned V1 data flow
+## Implemented V1 data architecture
 
 ```text
 Dataset -> GCS landing -> BigQuery RAW -> dbt STAGING -> dbt SILVER -> dbt GOLD / MARTS
 ```
 
-The initial public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the future demand-forecasting use case.
+The public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the future demand-forecasting use case.
 
 ## Status
 
-V1 Data Engineering in progress.
+V1 Data Engineering code complete; end-to-end cloud execution validation pending.

@@ -30,6 +30,16 @@ V1.6 implements the reusable analytical warehouse model:
 
 `fact_sales_daily` is a view over the already partitioned staging table to avoid duplicating roughly 59 million rows. `fact_prices_weekly` is a partitioned and clustered BigQuery table.
 
+## GOLD / MARTS
+
+V1.7 implements consumption-ready marts:
+
+- `mart_demand_daily`: enriched item-store-date demand table for analytics and later ML;
+- `mart_store_daily_sales`: store-day operational summary;
+- `mart_product_daily_sales`: product-day summary across stores.
+
+The detailed demand mart is materialized and optimized for repeated downstream consumption. GOLD preserves missing-price semantics and labels derived sales value as estimated rather than transaction-level revenue.
+
 ## Run
 
 From the repository root:
@@ -37,6 +47,7 @@ From the repository root:
 ```bash
 ./scripts/run_dbt_staging.sh
 ./scripts/run_dbt_silver.sh
+./scripts/run_dbt_gold.sh
 ```
 
 The committed `profiles.yml` contains no credentials. It uses BigQuery OAuth/Application Default Credentials and environment variables.
