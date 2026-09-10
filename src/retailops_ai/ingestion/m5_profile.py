@@ -15,6 +15,7 @@ CALENDAR_COLUMNS = (
     "wday",
     "month",
     "year",
+    "d",
     "event_name_1",
     "event_type_1",
     "event_name_2",
