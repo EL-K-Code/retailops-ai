@@ -4,10 +4,11 @@ RetailOps AI uses Python 3.12 and `uv` for dependency and environment management
 
 ## First-time setup
 
-From PowerShell at the repository root:
+From Bash at the repository root:
 
-```powershell
-.\scripts\bootstrap.ps1
+```bash
+chmod +x scripts/bootstrap.sh scripts/check.sh
+./scripts/bootstrap.sh
 ```
 
 The bootstrap script:
@@ -22,8 +23,8 @@ The bootstrap script:
 
 Run the project checks with:
 
-```powershell
-.\scripts\check.ps1
+```bash
+./scripts/check.sh
 ```
 
 The current V0 checks are:
@@ -39,9 +40,9 @@ pytest foundation tests
 
 Whenever dependencies change, run:
 
-```powershell
+```bash
 uv sync
-.\scripts\check.ps1
+./scripts/check.sh
 ```
 
 Commit the resulting `pyproject.toml` and `uv.lock` changes together after validation.
