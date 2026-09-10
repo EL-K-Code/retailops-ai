@@ -1,0 +1,16 @@
+name: retailops_ai
+version: "1.0.0"
+config-version: 2
+
+profile: retailops_ai
+
+model-paths: ["models"]
+test-paths: ["tests"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  retailops_ai:
+    staging:
+      +schema: staging
+      +tags: ["staging"]

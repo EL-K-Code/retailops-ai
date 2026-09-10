@@ -1,0 +1,37 @@
+version: 2
+
+sources:
+  - name: raw
+    description: "Immutable M5 source tables loaded from GCS into BigQuery RAW."
+    database: "{{ env_var('GOOGLE_CLOUD_PROJECT') }}"
+    schema: "{{ env_var('BQ_RAW_DATASET', 'retailops_raw') }}"
+    tables:
+      - name: raw_calendar
+        description: "Source-conformed M5 calendar table."
+        columns:
+          - name: d
+            data_tests: [not_null, unique]
+          - name: date
+            data_tests: [not_null, unique]
+
+      - name: raw_sell_prices
+        description: "Source-conformed weekly item-store prices."
+        columns:
+          - name: store_id
+            data_tests: [not_null]
+          - name: item_id
+            data_tests: [not_null]
+          - name: wm_yr_wk
+            data_tests: [not_null]
+          - name: sell_price
+            data_tests: [not_null]
+
+      - name: raw_sales
+        description: "Source-conformed wide M5 daily sales table."
+        columns:
+          - name: id
+            data_tests: [not_null, unique]
+          - name: item_id
+            data_tests: [not_null]
+          - name: store_id
+            data_tests: [not_null]

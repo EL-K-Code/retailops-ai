@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: stg_calendar
+    description: "Clean M5 calendar with the source day key normalized to day_key."
+    columns:
+      - name: day_key
+        description: "M5 day identifier such as d_1."
+        data_tests: [not_null, unique]
+      - name: date
+        data_tests: [not_null, unique]
+      - name: wm_yr_wk
+        data_tests: [not_null]
+
+  - name: stg_sell_prices
+    description: "Source-conformed weekly sell prices by store and item."
+    columns:
+      - name: store_id
+        data_tests: [not_null]
+      - name: item_id
+        data_tests: [not_null]
+      - name: wm_yr_wk
+        data_tests: [not_null]
+      - name: sell_price
+        data_tests: [not_null]
+
+  - name: stg_sales
+    description: "Long-format daily item-store sales with the M5 day key mapped to a calendar date."
+    columns:
+      - name: id
+        description: "Original M5 item-store series identifier."
+      - name: item_id
+        description: "M5 item identifier."
+      - name: store_id
+        description: "M5 store identifier."
+      - name: day_key
+        description: "Original M5 day key such as d_1."
+      - name: date
+        description: "Calendar date mapped from day_key."
+      - name: units_sold
+        description: "Daily units sold for the item-store series."
