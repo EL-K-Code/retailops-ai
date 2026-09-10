@@ -45,7 +45,7 @@ ML serving / MLOps / Agentic AI (later milestones)
 
 ## Current milestone
 
-**V1 — Data Engineering**
+**V2 — Machine Learning**
 
 Implemented so far:
 
@@ -55,7 +55,8 @@ Implemented so far:
 - BigQuery RAW loader with explicit schemas, deterministic table rebuilds and row-count validation;
 - dbt STAGING transformations with long-format sales, data tests, partitioning and clustering;
 - dbt SILVER warehouse model with reusable date/product/store dimensions and daily-sales/weekly-price facts;
-- dbt GOLD marts for item-store demand, store-day summaries, and product-day summaries with explicit price-coverage semantics.
+- dbt GOLD marts for item-store demand, store-day summaries, and product-day summaries with explicit price-coverage semantics;
+- leakage-aware 28-day demand-forecasting contract with fixed chronological train, validation, and test windows.
 
 Cloud-side execution remains an environment-specific validation step.
 
@@ -64,18 +65,37 @@ Cloud-side execution remains an environment-specific validation step.
 - Raw source data is kept as close as possible to the original source.
 - Business transformations belong in explicit transformation layers.
 - Temporal ML problems use temporal validation rather than random splits.
+- Forecast features respect as-of-time availability and must not use future target information.
 - Secrets and credentials are never committed to Git.
 - New infrastructure is introduced only when it solves a concrete problem.
 - A technology is considered part of the implemented stack only after it has actually been used and validated in the project.
 
-## Implemented V1 data architecture
+## Implemented data architecture
 
 ```text
-Dataset -> GCS landing -> BigQuery RAW -> dbt STAGING -> dbt SILVER -> dbt GOLD / MARTS
+Dataset
+  -> GCS landing
+  -> BigQuery RAW
+  -> dbt STAGING
+  -> dbt SILVER
+  -> dbt GOLD / MARTS
+  -> dbt ML temporal contract
 ```
 
-The public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the future demand-forecasting use case.
+The public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the demand-forecasting use case.
+
+## Forecasting evaluation contract
+
+The primary forecasting horizon is 28 days. The current fixed split is:
+
+```text
+Train:      2011-01-29 -> 2016-03-27
+Validation: 2016-03-28 -> 2016-04-24
+Test:       2016-04-25 -> 2016-05-22
+```
+
+The final test window remains untouched during model and feature selection.
 
 ## Status
 
-V1 Data Engineering code complete; end-to-end cloud execution validation pending.
+V1 Data Engineering code complete. V2.1 forecasting dataset contract implemented; end-to-end cloud execution validation pending.

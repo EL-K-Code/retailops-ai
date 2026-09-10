@@ -9,6 +9,15 @@ test-paths: ["tests"]
 target-path: "target"
 clean-targets: ["target", "dbt_packages"]
 
+vars:
+  demand_forecast_horizon_days: 28
+  demand_train_start: "2011-01-29"
+  demand_train_end: "2016-03-27"
+  demand_validation_start: "2016-03-28"
+  demand_validation_end: "2016-04-24"
+  demand_test_start: "2016-04-25"
+  demand_test_end: "2016-05-22"
+
 models:
   retailops_ai:
     staging:
@@ -20,3 +29,6 @@ models:
     gold:
       +schema: gold
       +tags: ["gold"]
+    ml:
+      +schema: ml
+      +tags: ["ml"]

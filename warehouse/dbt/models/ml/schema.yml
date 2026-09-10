@@ -1,0 +1,19 @@
+version: 2
+
+models:
+  - name: ml_demand_split
+    description: "Leakage-aware M5 demand observations with explicit train, validation, and test windows."
+    columns:
+      - name: series_id
+        description: "Original item-store time-series identifier."
+      - name: date
+        description: "Observation date and temporal split key."
+      - name: units_sold
+        description: "Forecast target: observed daily unit sales."
+      - name: dataset_split
+        description: "Chronological dataset split assigned from fixed M5 date windows."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["train", "validation", "test"]
