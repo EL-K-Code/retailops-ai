@@ -45,9 +45,15 @@ ML serving / MLOps / Agentic AI (later milestones)
 
 ## Current milestone
 
-**V0 — Foundation**
+**V1 — Data Engineering**
 
-The current objective is to establish a small, reproducible engineering foundation before connecting cloud services or ingesting data.
+Implemented so far:
+
+- reproducible M5 dataset acquisition workflow;
+- source contract validation and structural profiling;
+- immutable GCS landing uploader with SHA-256 traceability and create-only upload semantics.
+
+Cloud-side bucket creation and real uploads remain environment-specific validation steps.
 
 ## Engineering principles
 
@@ -64,8 +70,8 @@ The current objective is to establish a small, reproducible engineering foundati
 Dataset -> GCS landing -> BigQuery RAW -> dbt STAGING -> dbt SILVER -> dbt GOLD / MARTS
 ```
 
-The initial public dataset candidate is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the future demand-forecasting use case.
+The initial public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the future demand-forecasting use case.
 
 ## Status
 
-Foundation in progress.
+V1 Data Engineering in progress.
