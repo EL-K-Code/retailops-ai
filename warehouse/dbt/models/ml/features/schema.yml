@@ -1,0 +1,56 @@
+version: 2
+
+models:
+  - name: ml_training_features
+    description: "Leakage-safe one-step training table built only from training observations and target history ending strictly before each row date."
+    columns:
+      - name: series_id
+        description: "Stable item-store time-series identifier."
+        data_tests: [not_null]
+      - name: date
+        description: "Training target date."
+        data_tests: [not_null]
+      - name: units_sold
+        description: "One-step training target."
+        data_tests: [not_null]
+      - name: lag_1
+        data_tests: [not_null]
+      - name: lag_7
+        data_tests: [not_null]
+      - name: lag_14
+        data_tests: [not_null]
+      - name: lag_28
+        data_tests: [not_null]
+      - name: rolling_mean_7
+        data_tests: [not_null]
+      - name: rolling_mean_28
+        data_tests: [not_null]
+      - name: rolling_std_28
+        data_tests: [not_null]
+      - name: feature_history_end_date
+        description: "Latest target-history date allowed to contribute to this row."
+        data_tests: [not_null]
+      - name: dataset_split
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["train"]
+
+  - name: ml_forecast_covariates
+    description: "Validation/test future-known covariates with no observed target or target-derived lag/rolling features."
+    columns:
+      - name: series_id
+        data_tests: [not_null]
+      - name: date
+        data_tests: [not_null]
+      - name: item_id
+        data_tests: [not_null]
+      - name: store_id
+        data_tests: [not_null]
+      - name: dataset_split
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["validation", "test"]

@@ -57,7 +57,8 @@ Implemented so far:
 - dbt SILVER warehouse model with reusable date/product/store dimensions and daily-sales/weekly-price facts;
 - dbt GOLD marts for item-store demand, store-day summaries, and product-day summaries with explicit price-coverage semantics;
 - leakage-aware 28-day demand-forecasting contract with fixed chronological train, validation, and test windows;
-- leakage-safe last-value, seasonal-7, and seasonal-28 baselines with MAE, RMSE, and bottom-level mean RMSSE evaluation.
+- leakage-safe last-value, seasonal-7, and seasonal-28 baselines with MAE, RMSE, and bottom-level mean RMSSE evaluation;
+- leakage-safe ML feature layer with training-only lag/rolling features and target-free validation/test covariates.
 
 Cloud-side execution remains an environment-specific validation step.
 
@@ -68,6 +69,7 @@ Cloud-side execution remains an environment-specific validation step.
 - Temporal ML problems use temporal validation rather than random splits.
 - Forecast features respect as-of-time availability and must not use future target information.
 - Simple baselines establish a minimum performance bar before learned models are introduced.
+- Validation and test covariate contracts do not expose observed future demand.
 - Secrets and credentials are never committed to Git.
 - New infrastructure is introduced only when it solves a concrete problem.
 - A technology is considered part of the implemented stack only after it has actually been used and validated in the project.
@@ -83,6 +85,7 @@ Dataset
   -> dbt GOLD / MARTS
   -> dbt ML temporal contract
   -> validation baselines
+  -> leakage-safe training features / future covariates
 ```
 
 The public dataset is the **M5 Forecasting** retail dataset because it provides daily item-store sales, prices, and calendar information suitable for the demand-forecasting use case.
@@ -109,6 +112,8 @@ Seasonal naive (28 days)
 
 Baseline comparison reports MAE, RMSE, and unweighted mean RMSSE across bottom-level item-store series. The official competition WRMSSE is intentionally deferred because it additionally requires hierarchical aggregation and value-based weighting.
 
+The first learned-model feature contract uses a global one-step formulation. Training rows contain target history only through `t-1`; validation and test rows expose future-known covariates without observed demand. A later Python inference loop will recursively append predictions across the 28-day horizon.
+
 ## Status
 
-V1 Data Engineering code complete. V2.2 leakage-safe baseline framework implemented; cloud score execution and learned-model development remain pending.
+V1 Data Engineering code complete. V2.3 leakage-safe feature engineering implemented; cloud feature-table execution and Python LightGBM training remain pending.

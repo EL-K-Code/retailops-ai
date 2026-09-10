@@ -34,3 +34,5 @@ models:
       +tags: ["ml"]
       baselines:
         +tags: ["baseline"]
+      features:
+        +tags: ["feature"]
