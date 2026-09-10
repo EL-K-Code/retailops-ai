@@ -14,3 +14,6 @@ models:
     staging:
       +schema: staging
       +tags: ["staging"]
+    silver:
+      +schema: silver
+      +tags: ["silver"]

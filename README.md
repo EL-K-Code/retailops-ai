@@ -53,7 +53,8 @@ Implemented so far:
 - source contract validation and structural profiling;
 - immutable GCS landing uploader with SHA-256 traceability and create-only upload semantics;
 - BigQuery RAW loader with explicit schemas, deterministic table rebuilds and row-count validation;
-- dbt STAGING models with RAW source declarations, data tests, long-format sales normalization, date partitioning and SKU/store clustering.
+- dbt STAGING transformations with long-format sales, data tests, partitioning and clustering;
+- dbt SILVER warehouse model with reusable date/product/store dimensions and daily-sales/weekly-price facts.
 
 Cloud-side execution remains an environment-specific validation step.
 
@@ -66,7 +67,7 @@ Cloud-side execution remains an environment-specific validation step.
 - New infrastructure is introduced only when it solves a concrete problem.
 - A technology is considered part of the implemented stack only after it has actually been used and validated in the project.
 
-## V1 data flow
+## Planned V1 data flow
 
 ```text
 Dataset -> GCS landing -> BigQuery RAW -> dbt STAGING -> dbt SILVER -> dbt GOLD / MARTS

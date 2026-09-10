@@ -1,0 +1,64 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Calendar dimension at one row per M5 date."
+    columns:
+      - name: date
+        description: "Calendar date and natural date key."
+        data_tests: [not_null, unique]
+      - name: day_key
+        description: "Original M5 day key such as d_1."
+        data_tests: [not_null, unique]
+      - name: wm_yr_wk
+        data_tests: [not_null]
+      - name: is_weekend
+        data_tests: [not_null]
+
+  - name: dim_product
+    description: "Product dimension using stable M5 item, department, and category identifiers."
+    columns:
+      - name: item_id
+        data_tests: [not_null, unique]
+      - name: dept_id
+        data_tests: [not_null]
+      - name: cat_id
+        data_tests: [not_null]
+
+  - name: dim_store
+    description: "Store dimension using M5 store and state identifiers."
+    columns:
+      - name: store_id
+        data_tests: [not_null, unique]
+      - name: state_id
+        data_tests: [not_null]
+
+  - name: fact_sales_daily
+    description: "Daily sales fact at item-store-series x date grain."
+    columns:
+      - name: series_id
+        description: "Original M5 item-store series identifier."
+      - name: item_id
+        description: "Natural product key."
+      - name: store_id
+        description: "Natural store key."
+      - name: date
+        description: "Natural date key."
+      - name: day_key
+        description: "Original M5 day identifier retained for traceability."
+      - name: units_sold
+        description: "Observed daily unit sales."
+
+  - name: fact_prices_weekly
+    description: "Weekly sell-price fact at store x item x Walmart-week grain."
+    columns:
+      - name: store_id
+        description: "Natural store key."
+      - name: item_id
+        description: "Natural product key."
+      - name: wm_yr_wk
+        description: "Walmart week identifier."
+      - name: week_start_date
+        description: "Earliest calendar date represented for the Walmart week."
+      - name: sell_price
+        description: "Observed weekly sell price."
