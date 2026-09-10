@@ -51,9 +51,10 @@ Implemented so far:
 
 - reproducible M5 dataset acquisition workflow;
 - source contract validation and structural profiling;
-- immutable GCS landing uploader with SHA-256 traceability and create-only upload semantics.
+- immutable GCS landing uploader with SHA-256 traceability and create-only upload semantics;
+- BigQuery RAW loader with explicit schemas, deterministic table rebuilds and row-count validation.
 
-Cloud-side bucket creation and real uploads remain environment-specific validation steps.
+Cloud-side execution remains an environment-specific validation step.
 
 ## Engineering principles
 
