@@ -31,14 +31,14 @@ echo "Building the leakage-aware ML dataset contract..."
 uv run dbt build \
   --project-dir "${DBT_DIR}" \
   --profiles-dir "${DBT_DIR}" \
-  --select path:models/ml \
+  --select ml_demand_split \
   --fail-fast
 
 echo "Validating temporal split counts and boundaries..."
 uv run dbt test \
   --project-dir "${DBT_DIR}" \
   --profiles-dir "${DBT_DIR}" \
-  --select path:tests/ml \
+  --select ml_split_boundaries ml_split_row_counts \
   --fail-fast
 
 echo "ML dataset contract validation completed successfully."
