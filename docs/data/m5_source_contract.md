@@ -49,8 +49,7 @@ V1.2 therefore checks the boundary between the external source and RetailOps AI 
 ## Run the profiler
 
 ```bash
-chmod +x scripts/profile_m5.sh
-./scripts/profile_m5.sh
+python scripts/profile_m5.py
 ```
 
 The command streams the CSV files rather than loading the full dataset into memory. It validates:
