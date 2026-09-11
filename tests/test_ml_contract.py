@@ -5,7 +5,6 @@ from pathlib import Path
 
 from retailops_ai.ml.contracts import M5_DEMAND_FORECAST_CONTRACT
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

@@ -116,7 +116,10 @@ def profile_m5_source(data_dir: Path) -> dict[str, CsvProfile]:
 
 
 def _serialize_profiles(profiles: dict[str, CsvProfile]) -> dict[str, object]:
-    files = {name: {**asdict(profile), "valid": profile.valid} for name, profile in profiles.items()}
+    files = {
+        name: {**asdict(profile), "valid": profile.valid}
+        for name, profile in profiles.items()
+    }
     return {
         "dataset": "m5-forecasting-accuracy",
         "contract_version": 1,

@@ -14,7 +14,6 @@ from retailops_ai.ml.baselines import (
     seasonal_naive_forecast,
 )
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

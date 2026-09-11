@@ -12,7 +12,6 @@ import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
-
 MODEL_NAME = "lightgbm_global"
 MODEL_VERSION = "v1"
 DEFAULT_NUM_BOOST_ROUND = 300

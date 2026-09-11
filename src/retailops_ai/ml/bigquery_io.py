@@ -11,7 +11,6 @@ import pandas as pd
 from retailops_ai.ml.contracts import M5_DEMAND_FORECAST_CONTRACT
 from retailops_ai.ml.lightgbm_pipeline import MODEL_FEATURES
 
-
 TRAINING_QUERY_COLUMNS = (
     "series_id",
     "date",

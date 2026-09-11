@@ -6,7 +6,6 @@ import pytest
 
 from retailops_ai.ml.features import build_history_features, price_change_7d
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
