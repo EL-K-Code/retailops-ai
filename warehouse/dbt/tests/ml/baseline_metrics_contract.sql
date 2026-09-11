@@ -3,6 +3,10 @@
 with metrics as (
     select *
     from {{ ref('ml_baseline_metrics') }}
+),
+row_count as (
+    select count(*) as metric_count
+    from metrics
 )
 
 select *
@@ -23,4 +27,5 @@ select
     -1.0 as mae,
     -1.0 as rmse,
     -1.0 as mean_rmsse
-where (select count(*) from metrics) != 3
+from row_count
+where metric_count != 3
