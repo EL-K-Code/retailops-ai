@@ -12,26 +12,11 @@ For a target date `t`, the model learns:
 units_sold(t) = f(history through t-1, known covariates at t)
 ```
 
-The 28-day validation forecast will later be produced recursively in Python. After each predicted day, that prediction is appended to the series history and becomes available to construct the next day's lag and rolling features.
-
-This avoids reading observed validation labels for later horizons.
+The 28-day validation forecast is produced recursively in Python. After each predicted day, that prediction is appended to the series history and becomes available to construct the next day's lag and rolling features.
 
 ## Training feature table
 
-`ml_training_features` is built only from rows where:
-
-```text
-dataset_split = train
-```
-
-It is materialized as a BigQuery table because lag and rolling-window computation over tens of millions of rows is expensive and will be reused by model training.
-
-Physical layout:
-
-```text
-partition: date
-cluster: store_id, item_id
-```
+`ml_training_features` is built only from rows where `dataset_split = train` and is materialized as a BigQuery table partitioned by `date` and clustered by `store_id, item_id`.
 
 The first 28 training days are excluded because a complete 28-day target history is not yet available.
 
@@ -56,64 +41,17 @@ rolling_mean_28
 rolling_std_28
 ```
 
-Rolling windows explicitly use:
+Rolling windows explicitly end at `1 preceding`, so the current target is never included. `feature_history_end_date = t - 1 day` is retained as an audit field.
 
-```text
-... rows between N preceding and 1 preceding
-```
+## Calendar, entity, and price features
 
-so the current target is never included.
+The table also exposes entity identifiers, department/category/state, date parts, weekend/event/SNAP fields, `sell_price`, `price_available`, and `price_change_7d`.
 
-`feature_history_end_date = t - 1 day` is retained as an audit field.
-
-## Calendar and entity features
-
-The training table also exposes:
-
-```text
-item_id
-store_id
-department
-category
-state
-day_of_week
-day_of_month
-week_of_year
-month
-year
-is_weekend
-event fields
-snap_active
-```
-
-These variables are known from the row context or calendar.
-
-## Price features
-
-The table includes:
-
-```text
-sell_price
-price_available
-price_change_7d
-```
-
-`price_change_7d` compares the current price with the price seven days earlier using safe division.
-
-Price variables are only valid for future forecasting when the future price plan is genuinely known at prediction time. They remain optional deployment covariates rather than universally assumed information.
+Price variables are only valid for future forecasting when the future price plan is genuinely known at prediction time.
 
 ## Forecast covariates
 
-`ml_forecast_covariates` contains validation and test rows but deliberately excludes:
-
-```text
-units_sold
-lag_*
-rolling_*
-estimated_sales_value
-```
-
-The view contains only entity identifiers and future-known/conditionally-known covariates required by recursive inference.
+`ml_forecast_covariates` contains validation and test rows but deliberately excludes `units_sold`, target lags, target rolling statistics, and target-derived GOLD measures.
 
 Expected rows:
 
@@ -121,31 +59,16 @@ Expected rows:
 2 x 28 days x 30,490 series = 1,707,440
 ```
 
-## Why validation features are not precomputed from observed demand
-
-A tempting implementation would compute `lag_1`, `lag_7`, and rolling means directly for validation rows using SQL window functions over the full observed dataset.
-
-That would be wrong for a true 28-day forecast. For example, the `lag_1` feature for validation day 2 would contain the real demand from validation day 1, which would not be known when all 28 days are forecast from the same origin.
-
-RetailOps AI therefore separates:
-
-```text
-observed TRAIN history -> SQL training features
-future validation/test calendar context -> forecast covariates
-recursive predicted history -> Python inference features (next milestone)
-```
-
 ## Run
 
 After the ML split contract exists:
 
 ```bash
-chmod +x scripts/run_dbt_features.sh
-./scripts/run_dbt_features.sh
+python scripts/run_dbt_features.py
 ```
 
 Building the physical training feature table can scan and store tens of millions of BigQuery rows. Check the active billing/free-tier context before cloud execution.
 
 ## Scope boundary
 
-V2.3 does not fit a learned model. The next milestone introduces Python + LightGBM, reads the training feature table, trains a global regressor, and evaluates a recursive 28-day forecast against the existing baselines.
+V2.3 does not fit a learned model. V2.4 introduces Python + LightGBM, recursive 28-day inference, and evaluation against the existing baselines.

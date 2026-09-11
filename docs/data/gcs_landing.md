@@ -62,7 +62,7 @@ cp .env.example .env
 
 Set at least:
 
-```bash
+```text
 GOOGLE_CLOUD_PROJECT=your-project-id
 GCS_BUCKET=your-globally-unique-bucket-name
 GCS_LOCATION=us-central1
@@ -92,8 +92,7 @@ Bucket names are globally unique. Choose a name that belongs to your project rat
 After the bucket exists and ADC is configured:
 
 ```bash
-chmod +x scripts/upload_m5_to_gcs.sh
-./scripts/upload_m5_to_gcs.sh
+python scripts/upload_m5_to_gcs.py
 ```
 
 The script re-runs the M5 structural profiler before any cloud upload, then uploads or safely skips each source file.

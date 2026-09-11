@@ -26,69 +26,27 @@ Python
 
 ## First-model scope
 
-The initial model is a **global** model: one LightGBM booster is trained across all item-store series rather than fitting 30,490 independent estimators.
+The initial model is global: one LightGBM booster is trained across all item-store series rather than fitting 30,490 independent estimators.
 
-The target is non-negative count demand, so the first configuration uses LightGBM's Poisson objective. Model performance is still reported with the same model-agnostic validation metrics as the baselines.
-
-No validation labels are used to construct recursive forecast features.
+The target is non-negative count demand, so the first configuration uses LightGBM's Poisson objective. No validation labels are used to construct recursive forecast features.
 
 ## Local resource guardrail
 
-The full feature table contains more than 56 million training rows. Pulling the entire table into a developer laptop would be unnecessarily expensive and memory intensive for a first model.
-
-The Python loader therefore uses a configurable recent training window:
+The full feature table contains more than 56 million training rows. The Python loader therefore uses a configurable recent training window:
 
 ```text
 ML_TRAIN_LOOKBACK_DAYS=180
 ```
 
-With 30,490 bottom-level series, 180 days corresponds to approximately 5.49 million rows before any source irregularity. This is a pragmatic V1 training budget, not a claim that 180 days is the optimal statistical lookback.
-
-The window is selected with a BigQuery date predicate so the partitioned feature table can prune older partitions.
+With 30,490 bottom-level series, 180 days corresponds to approximately 5.49 million rows. This is a pragmatic first training budget, not a claim that 180 days is statistically optimal.
 
 ## Features
 
-Categorical features:
+Categorical features include item/store/product hierarchy, state, and event fields. Numeric/binary features include price/calendar fields plus lags and rolling statistics.
 
-```text
-item_id
-store_id
-department
-category
-state
-event_name_1
-event_type_1
-event_name_2
-event_type_2
-```
-
-Numeric / binary features:
-
-```text
-sell_price
-price_available
-price_change_7d
-is_weekend
-snap_active
-day_of_week
-day_of_month
-week_of_year
-month
-year
-lag_1
-lag_7
-lag_14
-lag_28
-rolling_mean_7
-rolling_mean_28
-rolling_std_28
-```
-
-Category vocabularies are learned from the training frame and reused during recursive inference. Unseen future values become missing categories instead of silently receiving arbitrary integer identities.
+Category vocabularies are learned from the training frame and reused during recursive inference. Unseen future values become missing categories instead of receiving arbitrary integer identities.
 
 ## Recursive 28-day inference
-
-The model is trained as a global one-step predictor. Validation inference is recursive:
 
 ```text
 real train history
@@ -100,9 +58,7 @@ real train history
     -> predict validation day 28
 ```
 
-The Python inference state retains only the final 28 values per series because the current history-derived features require at most 28 days.
-
-Validation labels are loaded only **after** the recursive predictions have been generated.
+Validation labels are loaded only after the recursive predictions have been generated.
 
 ## Outputs
 
@@ -114,56 +70,38 @@ artifacts/models/lightgbm_global_v1/
 └── metadata.json
 ```
 
-The metadata records feature names, categorical vocabularies, training dates, row count, parameters, model version, and validation metrics.
-
-When explicitly enabled with:
-
-```text
-ML_WRITE_BIGQUERY=true
-```
-
-Python appends run-versioned outputs to:
+When `ML_WRITE_BIGQUERY=true`, Python appends run-versioned outputs to:
 
 ```text
 retailops_ml.ml_forecast_predictions
 retailops_ml.ml_model_evaluation
 ```
 
-Predictions are not written back by default, which avoids accidental cloud mutations while developing locally.
+Predictions are not written back by default.
 
 ## BigQuery reading mode
 
-Standard BigQuery DataFrame downloads are used by default:
-
-```text
-ML_USE_BQ_STORAGE_API=false
-```
-
-The BigQuery Storage Read API can be enabled for faster reads:
-
-```text
-ML_USE_BQ_STORAGE_API=true
-```
-
-Storage Read API usage has its own pricing and outbound network considerations. Review the active Google Cloud billing context before enabling it.
+Standard BigQuery DataFrame downloads are used by default with `ML_USE_BQ_STORAGE_API=false`. The BigQuery Storage Read API can be enabled for faster reads, but its pricing and network implications should be reviewed first.
 
 ## Run
 
-After the dbt feature layer and baseline tables have been built in the real GCP environment:
+After the dbt feature layer and baseline tables have been built in GCP:
 
 ```bash
-chmod +x scripts/train_lightgbm.sh
-./scripts/train_lightgbm.sh
+python scripts/train_lightgbm_runner.py
 ```
 
-To persist predictions and evaluation rows:
+Example smoke run:
 
 ```bash
-ML_WRITE_BIGQUERY=true ./scripts/train_lightgbm.sh
+python scripts/train_lightgbm_runner.py \
+  --train-lookback-days 30 \
+  --num-boost-round 20 \
+  --artifact-dir artifacts/models/lightgbm_global_v1_smoke
 ```
+
+To persist predictions and evaluation rows, set `ML_WRITE_BIGQUERY=true` in `.env` before running the Python entry point.
 
 ## Validation discipline
 
 V2.4 evaluates only the fixed validation window. The final test split stays untouched while the first model, feature set, and training-budget decisions are still being developed.
-
-A real M5 score must not be claimed until this pipeline has been executed against the actual BigQuery feature tables.
