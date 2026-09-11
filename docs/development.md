@@ -2,13 +2,14 @@
 
 RetailOps AI uses Python 3.12 and `uv` for dependency and environment management.
 
+Repository automation is implemented in Python. Bash wrappers are intentionally not used, so the same commands work from Git Bash, PowerShell, Command Prompt, and Unix-like shells as long as Python and `uv` are available.
+
 ## First-time setup
 
-From Bash at the repository root:
+From the repository root:
 
 ```bash
-chmod +x scripts/bootstrap.sh scripts/check.sh
-./scripts/bootstrap.sh
+python scripts/bootstrap.py
 ```
 
 The bootstrap script:
@@ -24,15 +25,39 @@ The bootstrap script:
 Run the project checks with:
 
 ```bash
-./scripts/check.sh
+python scripts/check.py
 ```
 
-The current V0 checks are:
+The current checks are:
 
 ```text
+Python version
 Ruff static checks
-pytest foundation tests
+pytest test suite
 ```
+
+## Python orchestration scripts
+
+Cloud and data workflows use Python entry points under `scripts/`:
+
+```text
+bootstrap.py
+check.py
+download_m5.py
+validate_m5.py
+profile_m5.py
+upload_m5_to_gcs.py
+load_m5_to_bigquery.py
+run_dbt_staging.py
+run_dbt_silver.py
+run_dbt_gold.py
+run_dbt_ml_contract.py
+run_dbt_baselines.py
+run_dbt_features.py
+train_lightgbm_runner.py
+```
+
+The scripts share environment loading, subprocess execution, and dbt helpers through `scripts/_common.py`.
 
 ## Lockfile policy
 
@@ -42,7 +67,7 @@ Whenever dependencies change, run:
 
 ```bash
 uv sync
-./scripts/check.sh
+python scripts/check.py
 ```
 
 Commit the resulting `pyproject.toml` and `uv.lock` changes together after validation.
