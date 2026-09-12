@@ -1,0 +1,8 @@
+lightgbm
+pandas
+numpy
+google-cloud-bigquery
+google-cloud-storage
+pyarrow
+db-dtypes
+scikit-learn
