@@ -1,9 +1,15 @@
-# Vertex AI Training Pipeline
+# Vertex AI training container
 
-This directory contains the cloud-training layer for RetailOps AI.
+This directory packages the same global LightGBM forecasting logic used by the validated local pipeline.
 
-Target flow:
+The Docker build context must be the repository root because the container copies the shared `src/retailops_ai` package:
 
-BigQuery ML features -> Vertex AI Training Job -> LightGBM artifact -> GCS -> Vertex AI Model Registry
+```bash
+docker build -f training/Dockerfile -t retailops-lightgbm-training:local .
+```
 
-The first implementation will reuse the validated local LightGBM pipeline and move execution to managed cloud infrastructure.
+Vertex AI sets `AIP_MODEL_DIR` when the custom job is launched with `base_output_dir`. The training entrypoint writes `model.txt`, `metadata.json`, and `metrics.json` locally, then uploads them to that run-specific GCS model directory.
+
+The container also logs parameters and validation metrics to Vertex AI Experiments when `VERTEX_EXPERIMENT` is configured.
+
+The image is intended for training only. Online endpoint deployment remains V4.
