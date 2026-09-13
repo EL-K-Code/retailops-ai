@@ -100,7 +100,10 @@ def build_agent_graph(deps: AgentGraphDependencies, *, checkpointer: Any) -> Any
                 "proposal": proposal.model_dump(mode="json"),
                 "answer_preview": draft.answer,
                 "evidence_sources": draft.evidence_sources,
-                "notice": "Approval authorizes human follow-up only; no external system is mutated.",
+                "notice": (
+                    "Approval authorizes human follow-up only; "
+                    "no external system is mutated."
+                ),
             }
         )
         validated = ApprovalDecision.model_validate(decision)

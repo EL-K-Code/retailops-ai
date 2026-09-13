@@ -44,6 +44,19 @@ class KnowledgeRetriever(Protocol):
     def search(self, query: str, *, top_k: int) -> list[KnowledgeHit]: ...
 
 
+def _append_chunk(
+    chunks: list[KnowledgeChunk],
+    *,
+    source: str,
+    section: str,
+    buffer: list[str],
+) -> None:
+    text = "\n".join(buffer).strip()
+    if text:
+        chunks.append(KnowledgeChunk(source=source, section=section, text=text))
+    buffer.clear()
+
+
 def load_markdown_chunks(directory: str | Path) -> list[KnowledgeChunk]:
     root = Path(directory)
     if not root.is_dir():
@@ -53,22 +66,14 @@ def load_markdown_chunks(directory: str | Path) -> list[KnowledgeChunk]:
     for path in sorted(root.glob("*.md")):
         section = path.stem
         buffer: list[str] = []
-
-        def flush() -> None:
-            text = "\n".join(buffer).strip()
-            if text:
-                chunks.append(
-                    KnowledgeChunk(source=path.name, section=section, text=text)
-                )
-            buffer.clear()
-
+        source = path.name
         for line in path.read_text(encoding="utf-8").splitlines():
             if line.startswith("#"):
-                flush()
+                _append_chunk(chunks, source=source, section=section, buffer=buffer)
                 section = line.lstrip("#").strip() or path.stem
             else:
                 buffer.append(line)
-        flush()
+        _append_chunk(chunks, source=source, section=section, buffer=buffer)
 
     if not chunks:
         raise ValueError(f"No Markdown knowledge documents found under {root}")
@@ -93,7 +98,11 @@ class LexicalKnowledgeRetriever:
 
         ranked: list[tuple[float, int]] = []
         for index, counter in enumerate(self._counters):
-            overlap = sum(1.0 + math.log(counter[token]) for token in query_tokens if token in counter)
+            overlap = sum(
+                1.0 + math.log(counter[token])
+                for token in query_tokens
+                if token in counter
+            )
             if overlap <= 0:
                 continue
             normalization = math.sqrt(max(sum(counter.values()), 1))

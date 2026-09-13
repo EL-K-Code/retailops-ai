@@ -1,5 +1,8 @@
-from retailops_ai.agent.analytics import AnalyticsConfig, build_query_spec
-from retailops_ai.agent.schemas import AnalyticsRequest
+from retailops_ai.agent.analytics import (
+    AnalyticsConfig,
+    AnalyticsRequest,
+    build_query_spec,
+)
 
 
 CONFIG = AnalyticsConfig(
