@@ -75,10 +75,12 @@ After GCP APIs, IAM, the Artifact Registry repository, and the model bucket are 
 ```bash
 uv sync
 python scripts/check.py
-python vertex/build_training_image.py --tag v1
-python vertex/build_serving_image.py --tag v1
-python -m vertex.run_training_pipeline
+uv run python vertex/build_training_image.py --tag v1
+uv run python vertex/build_serving_image.py --tag v1
+uv run python -m vertex.run_training_pipeline
 ```
+
+Using `uv run` ensures the orchestration always uses the project's Python 3.12 environment rather than whichever Python happens to be first on the workstation PATH.
 
 The pipeline waits for training to finish, reads the run's `metrics.json`, applies the quality gate, and only then registers a passing artifact directory as a new model version.
 
