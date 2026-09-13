@@ -29,7 +29,7 @@ class ServingRuntimeConfig:
     use_storage_api: bool
 
     @classmethod
-    def from_env(cls) -> "ServingRuntimeConfig":
+    def from_env(cls) -> ServingRuntimeConfig:
         project = os.getenv("GOOGLE_CLOUD_PROJECT", "")
         if not project:
             raise RuntimeError("GOOGLE_CLOUD_PROJECT is required")
