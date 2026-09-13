@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 from google.cloud import storage
 
@@ -18,6 +20,24 @@ def split_gcs_uri(uri: str) -> tuple[str, str]:
         raise ValueError("GCS URI must include a bucket name")
 
     return bucket_name, prefix.rstrip("/") if separator else ""
+
+
+def load_json_from_gcs(
+    gcs_uri: str,
+    *,
+    client: storage.Client | None = None,
+) -> dict[str, Any]:
+    """Load one JSON object from a GCS URI."""
+    bucket_name, object_name = split_gcs_uri(gcs_uri)
+    if not object_name:
+        raise ValueError("JSON GCS URI must include an object path")
+
+    storage_client = client or storage.Client()
+    text = storage_client.bucket(bucket_name).blob(object_name).download_as_text()
+    payload = json.loads(text)
+    if not isinstance(payload, dict):
+        raise ValueError(f"Expected a JSON object at {gcs_uri}")
+    return payload
 
 
 def upload_directory_to_gcs(
