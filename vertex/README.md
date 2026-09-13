@@ -9,29 +9,37 @@ This directory contains the V3 orchestration layer for RetailOps AI.
 3. Run the validated training/evaluation code on Vertex AI Custom Training.
 4. Store each run under a unique GCS artifact directory.
 5. Log parameters and MAE/RMSE/mean-RMSSE in Vertex AI Experiments.
-6. Register the resulting artifact as a version in Vertex AI Model Registry.
+6. Apply an RMSSE quality gate against the best validated baseline.
+7. Register only passing artifacts as versions in Vertex AI Model Registry.
 
 The serving image is attached to the registry model because Vertex requires a prediction container for custom model upload. **V3 does not create an endpoint.** Business-facing online serving and recursive 28-day inference remain V4.
 
 ## Main commands
 
-Build the two images:
+Synchronize the Python 3.12 environment and run local checks:
 
 ```bash
-python vertex/build_training_image.py --tag v1
-python vertex/build_serving_image.py --tag v1
+uv sync
+python scripts/check.py
+```
+
+Build the two images through the project environment:
+
+```bash
+uv run python vertex/build_training_image.py --tag v1
+uv run python vertex/build_serving_image.py --tag v1
 ```
 
 Run training only:
 
 ```bash
-python -m vertex.submit_training_job
+uv run python -m vertex.submit_training_job
 ```
 
-Run training and register the resulting model version:
+Run training, apply the quality gate, and register a passing model version:
 
 ```bash
-python -m vertex.run_training_pipeline
+uv run python -m vertex.run_training_pipeline
 ```
 
 The cloud resources and IAM prerequisites are documented in `docs/mlops_vertex.md`.
