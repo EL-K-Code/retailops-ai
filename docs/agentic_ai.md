@@ -132,6 +132,10 @@ This limitation is intentional and documented rather than hidden.
 
 ## Validation status
 
-V5 is code-complete only after Ruff and unit/API/graph tests pass in CI. Real Gemini, Vertex
-embeddings, private Cloud Run authentication, and BigQuery tool calls remain environment-specific
-cloud validation steps and must not be claimed as executed until they actually run.
+V5 is code-complete and CI-validated under Python 3.12: Ruff passes and the repository test suite
+reports 62 passing tests. The tests cover the LangGraph plan/tool/synthesis loop, RAG retrieval,
+allowlisted analytics query construction, Agent API behavior, and HITL interrupt/resume paths.
+
+Real Gemini calls on Vertex AI, Vertex embedding retrieval, private Cloud Run authentication,
+BigQuery agent-tool execution, and cloud-hosted HITL behavior remain environment-specific validation
+steps and must not be claimed as executed until they actually run.

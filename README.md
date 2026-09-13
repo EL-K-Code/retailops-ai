@@ -70,7 +70,8 @@ Implemented code paths now include:
 - tool-call deduplication and a maximum tool-step budget;
 - LangGraph human approval interrupts for business action proposals;
 - separate Agent API with query/resume endpoints;
-- container build contract for the V5 service.
+- container build contract for the V5 service;
+- GitHub Actions validation under Python 3.12 with Ruff and 62 passing tests.
 
 V3, V4 and V5 cloud code must not be described as cloud-validated until their real GCP executions
 complete successfully.
@@ -173,6 +174,7 @@ POST /v1/agent/resume
 - **V2 Machine Learning:** real BigQuery-backed LightGBM run validated and beats all implemented
   baselines.
 - **V3 MLOps:** code implemented; real Vertex AI execution pending.
-- **V4 Serving & Cloud:** code and CI implemented; real Cloud Run execution pending.
-- **V5 Agentic AI:** code implementation and CI validation in progress; real Gemini / tool / HITL
-  cloud execution pending.
+- **V4 Serving & Cloud:** code and CI validated; real Cloud Run execution pending.
+- **V5 Agentic AI:** code and CI validated (Ruff + 62 tests under Python 3.12); real Gemini,
+  Vertex-embedding, private Cloud Run tool calls, BigQuery agent queries, and cloud HITL execution
+  remain pending.
