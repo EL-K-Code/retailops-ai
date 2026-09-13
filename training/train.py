@@ -11,10 +11,9 @@ import argparse
 import gc
 import json
 import os
-from contextlib import nullcontext
+from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import ContextManager
 
 from google.cloud import aiplatform, bigquery
 
@@ -90,7 +89,7 @@ def _experiment_context(
     location: str,
     experiment: str | None,
     run_name: str,
-) -> ContextManager[object]:
+) -> AbstractContextManager[object]:
     if not experiment:
         return nullcontext()
 
