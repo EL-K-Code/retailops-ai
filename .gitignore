@@ -39,6 +39,14 @@ warehouse/dbt/target/
 warehouse/dbt/logs/
 warehouse/dbt/dbt_packages/
 
+# Terraform local state and provider cache
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+crash.log
+
 # Temporary files
 *.log
 *.tmp
