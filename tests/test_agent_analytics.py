@@ -1,7 +1,7 @@
-import retailops_ai.agent.analytics as agent_analytics
+from retailops_ai.agent.analytics import AnalyticsConfig, AnalyticsRequest, build_query_spec
 
 
-CONFIG = agent_analytics.AnalyticsConfig(
+CONFIG = AnalyticsConfig(
     project="retailops-ai-2026",
     location="us-central1",
     dbt_dataset="retailops",
@@ -9,8 +9,8 @@ CONFIG = agent_analytics.AnalyticsConfig(
 
 
 def test_top_products_uses_allowlisted_gold_mart_and_parameterized_limit():
-    spec = agent_analytics.build_query_spec(
-        agent_analytics.AnalyticsRequest(operation="top_products", split="test", top_n=7),
+    spec = build_query_spec(
+        AnalyticsRequest(operation="top_products", split="test", top_n=7),
         CONFIG,
     )
 
@@ -20,8 +20,8 @@ def test_top_products_uses_allowlisted_gold_mart_and_parameterized_limit():
 
 
 def test_baseline_metrics_uses_ml_contract_table_without_free_sql():
-    spec = agent_analytics.build_query_spec(
-        agent_analytics.AnalyticsRequest(operation="baseline_metrics", split="validation"),
+    spec = build_query_spec(
+        AnalyticsRequest(operation="baseline_metrics", split="validation"),
         CONFIG,
     )
 
