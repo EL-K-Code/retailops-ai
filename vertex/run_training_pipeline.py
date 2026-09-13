@@ -1,4 +1,4 @@
-"""Run the V3 RetailOps Vertex training workflow and register the resulting model."""
+"""Run V3 Vertex training, quality-gate the run, and register a model version."""
 
 from __future__ import annotations
 
@@ -6,8 +6,12 @@ import argparse
 import json
 import os
 
+from retailops_ai.mlops.artifacts import load_json_from_gcs
+from retailops_ai.mlops.quality import evaluate_mean_rmsse_gate
 from vertex.register_model import register_model
 from vertex.submit_training_job import submit_training_job
+
+BEST_VALIDATED_BASELINE_MEAN_RMSSE = 0.952306197699721
 
 
 def parse_args() -> argparse.Namespace:
@@ -19,7 +23,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--service-account", default=os.getenv("VERTEX_SERVICE_ACCOUNT"))
     parser.add_argument(
         "--machine-type",
-        default=os.getenv("VERTEX_MACHINE_TYPE", "e2-standard-4"),
+        default=os.getenv("VERTEX_MACHINE_TYPE", "n1-standard-4"),
     )
     parser.add_argument(
         "--experiment",
@@ -29,12 +33,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--train-lookback-days",
         type=int,
-        default=int(os.getenv("ML_TRAIN_LOOKBACK_DAYS", "180")),
+        default=int(os.getenv("VERTEX_TRAIN_LOOKBACK_DAYS", "90")),
     )
     parser.add_argument(
         "--num-boost-round",
         type=int,
-        default=int(os.getenv("ML_NUM_BOOST_ROUND", "300")),
+        default=int(os.getenv("VERTEX_NUM_BOOST_ROUND", "100")),
+    )
+    parser.add_argument(
+        "--max-mean-rmsse",
+        type=float,
+        default=float(
+            os.getenv(
+                "VERTEX_MAX_MEAN_RMSSE",
+                str(BEST_VALIDATED_BASELINE_MEAN_RMSSE),
+            )
+        ),
+        help="Candidate must be strictly below this RMSSE before registration.",
     )
     parser.add_argument(
         "--model-display-name",
@@ -80,6 +95,27 @@ def main() -> None:
         num_boost_round=args.num_boost_round,
     )
 
+    metrics_uri = f"{training.artifact_uri.rstrip('/')}/metrics.json"
+    metrics = load_json_from_gcs(metrics_uri)
+    if "mean_rmsse" not in metrics:
+        raise SystemExit(f"Training metrics are missing mean_rmsse: {metrics_uri}")
+
+    gate = evaluate_mean_rmsse_gate(
+        observed_mean_rmsse=float(metrics["mean_rmsse"]),
+        maximum_mean_rmsse=args.max_mean_rmsse,
+    )
+    print(
+        "Quality gate: "
+        f"mean RMSSE={gate.observed_mean_rmsse:.6f} < "
+        f"{gate.maximum_mean_rmsse:.6f} -> "
+        f"{'PASS' if gate.passed else 'FAIL'}"
+    )
+    if not gate.passed:
+        raise SystemExit(
+            "Training completed, but the candidate did not beat the validated baseline. "
+            "Artifacts and experiment metrics were kept; Model Registry was not updated."
+        )
+
     model = register_model(
         project=args.project,
         region=args.region,
@@ -97,6 +133,9 @@ def main() -> None:
                 "run_name": training.run_name,
                 "training_job": training.job_resource_name,
                 "artifact_uri": training.artifact_uri,
+                "mean_rmsse": gate.observed_mean_rmsse,
+                "quality_gate_max_mean_rmsse": gate.maximum_mean_rmsse,
+                "quality_gate_improvement_fraction": gate.improvement_fraction,
                 "model_resource": model.resource_name,
                 "model_version": model.version_id,
             },
