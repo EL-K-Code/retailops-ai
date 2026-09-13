@@ -1,10 +1,20 @@
-FROM python:3.11-slim
+FROM python:3.12-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# LightGBM requires libgomp at runtime.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY train.py .
+COPY training/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
-ENTRYPOINT ["python", "train.py"]
+COPY src ./src
+COPY training/train.py ./training/train.py
+
+ENTRYPOINT ["python", "training/train.py"]
