@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--machine-type",
-        default=os.getenv("VERTEX_MACHINE_TYPE", "e2-standard-4"),
+        default=os.getenv("VERTEX_MACHINE_TYPE", "n1-standard-4"),
     )
     parser.add_argument(
         "--experiment",
@@ -41,12 +41,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--train-lookback-days",
         type=int,
-        default=int(os.getenv("ML_TRAIN_LOOKBACK_DAYS", "180")),
+        default=int(os.getenv("VERTEX_TRAIN_LOOKBACK_DAYS", "90")),
     )
     parser.add_argument(
         "--num-boost-round",
         type=int,
-        default=int(os.getenv("ML_NUM_BOOST_ROUND", "300")),
+        default=int(os.getenv("VERTEX_NUM_BOOST_ROUND", "100")),
     )
     return parser.parse_args()
 
