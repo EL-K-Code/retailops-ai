@@ -1,0 +1,83 @@
+name: Deploy Cloud Run API
+
+on:
+  workflow_dispatch:
+    inputs:
+      model_artifact_uri:
+        description: "Promoted GCS model artifact URI (gs://.../model)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: retailops-cloudrun-production
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
+  SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+  RUNTIME_SERVICE_ACCOUNT: ${{ vars.CLOUD_RUN_SERVICE_ACCOUNT }}
+  BQ_DBT_DATASET: ${{ vars.BQ_DBT_DATASET }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Build API image
+        env:
+          IMAGE_URI: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/retailops-api:${{ github.sha }}
+        run: |
+          gcloud builds submit \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --config api/cloudbuild.yaml \
+            --substitutions "_IMAGE_URI=${IMAGE_URI}" \
+            .
+          echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
+
+      - name: Deploy private Cloud Run service
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          region: ${{ env.REGION }}
+          service: ${{ env.SERVICE }}
+          image: ${{ env.IMAGE_URI }}
+          env_vars: |-
+            GOOGLE_CLOUD_PROJECT=${{ env.PROJECT_ID }}
+            BQ_LOCATION=${{ env.REGION }}
+            BQ_DBT_DATASET=${{ env.BQ_DBT_DATASET }}
+            MODEL_ARTIFACT_URI=${{ inputs.model_artifact_uri }}
+            SERVING_MAX_ENTITIES=50
+            ML_USE_BQ_STORAGE_API=false
+          flags: >-
+            --service-account=${{ env.RUNTIME_SERVICE_ACCOUNT }}
+            --min-instances=0
+            --max-instances=2
+            --cpu=1
+            --memory=1Gi
+            --concurrency=10
+            --timeout=120
+            --no-allow-unauthenticated
+
+      - name: Show service URL
+        run: echo "${{ steps.deploy.outputs.url }}"

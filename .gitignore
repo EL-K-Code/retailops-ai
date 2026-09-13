@@ -19,6 +19,7 @@ env/
 credentials*.json
 service-account*.json
 gcp-key*.json
+gha-creds-*.json
 
 # Editors / OS
 .vscode/

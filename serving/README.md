@@ -1,12 +1,9 @@
-# Vertex Model Registry serving container
+# Vertex model serving container
 
-This container exists in V3 so a custom LightGBM artifact can be imported into Vertex AI Model Registry with a valid custom prediction container contract.
+This directory contains the minimal Vertex-compatible prediction container attached to custom LightGBM versions in Model Registry.
 
-It exposes:
+It accepts fully prepared feature rows through `/predict`. Model loading is shared with the V4 Cloud Run business API through `retailops_ai.serving.model`, so both runtimes consume the same `model.txt`, `metadata.json`, and categorical-level contract.
 
-- `GET /health`
-- `POST /predict`
+This container is **not** the business-facing forecasting API. It does not query BigQuery or manage the 28-day recursive state. Those responsibilities belong to V4 under `api/` and `retailops_ai.serving.service`.
 
-At Vertex startup, `AIP_STORAGE_URI` points to the registered model artifact directory. The container downloads `model.txt` and `metadata.json`, restores the training category levels, and accepts already-engineered model feature rows.
-
-The business-facing forecast API and recursive 28-day serving workflow remain a V4 concern. This container is **not deployed to an endpoint during V3**.
+No Vertex endpoint is created during V3. `vertex/deploy_endpoint.py` remains guarded because online Vertex endpoint compute can generate persistent charges.
