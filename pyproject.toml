@@ -24,6 +24,11 @@ dependencies = [
     "uvicorn>=0.35,<1",
 ]
 
+[project.optional-dependencies]
+production = [
+    "langgraph-checkpoint-postgres>=2.0,<4",
+]
+
 [build-system]
 requires = ["setuptools>=80"]
 build-backend = "setuptools.build_meta"
