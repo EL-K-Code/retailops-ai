@@ -1,4 +1,4 @@
-from retailops_ai.agent import analytics
+from retailops_ai.agent import analytics  # noqa: I001
 
 
 CONFIG = analytics.AnalyticsConfig(
