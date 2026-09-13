@@ -1,4 +1,4 @@
-from retailops_ai.agent import analytics as agent_analytics
+import retailops_ai.agent.analytics as agent_analytics
 
 
 CONFIG = agent_analytics.AnalyticsConfig(
