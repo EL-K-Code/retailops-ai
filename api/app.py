@@ -16,7 +16,8 @@ from retailops_ai.serving.repository import EntityKey
 from retailops_ai.serving.runtime import ServingRuntime, build_runtime
 from retailops_ai.serving.service import ForecastBatch, UnknownSeriesError
 
-LOGGER = logging.getLogger("retailops.api")
+LOGGER = logging.getLogger("uvicorn.error").getChild("retailops.api")
+LOGGER.setLevel(logging.INFO)
 RuntimeFactory = Callable[[], ServingRuntime]
 
 
