@@ -15,7 +15,8 @@ from pydantic import BaseModel, Field
 from retailops_ai.agent.runtime import AgentRuntime, build_agent_runtime
 from retailops_ai.agent.schemas import AgentRunResult
 
-LOGGER = logging.getLogger("retailops.agent_api")
+LOGGER = logging.getLogger("uvicorn.error").getChild("retailops.agent_api")
+LOGGER.setLevel(logging.INFO)
 RuntimeFactory = Callable[[], AgentRuntime]
 
 
