@@ -43,6 +43,18 @@ one-hour timeout by default. The job is deployed with `--help` as its default
 argument so an accidental manual execution does not start a full training run;
 the runner supplies explicit execution overrides.
 
+A completed Cloud Run training artifact can use the same promotion path as a
+Vertex-trained artifact. The promotion helper reads `metrics.json`, applies the
+validated mean-RMSSE gate, and registers only passing candidates in Vertex AI
+Model Registry:
+
+```bash
+uv run python -m vertex.promote_artifact \
+  --artifact-uri gs://<model-bucket>/cloudrun-training/<run-name>/model \
+  --run-name <run-name> \
+  --serving-image-uri <vertex-serving-image-uri>
+```
+
 ## Forecast API serving
 
 The API container lives under `api/`. It loads one promoted LightGBM artifact
