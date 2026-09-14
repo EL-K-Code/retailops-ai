@@ -6,12 +6,12 @@ import argparse
 import json
 import os
 
-from retailops_ai.mlops.artifacts import load_json_from_gcs
-from retailops_ai.mlops.quality import evaluate_mean_rmsse_gate
-from vertex.register_model import register_model
+from vertex.promote_artifact import (
+    BEST_VALIDATED_BASELINE_MEAN_RMSSE,
+    PromotionRejectedError,
+    promote_artifact,
+)
 from vertex.submit_training_job import submit_training_job
-
-BEST_VALIDATED_BASELINE_MEAN_RMSSE = 0.952306197699721
 
 
 def parse_args() -> argparse.Namespace:
@@ -95,53 +95,23 @@ def main() -> None:
         num_boost_round=args.num_boost_round,
     )
 
-    metrics_uri = f"{training.artifact_uri.rstrip('/')}/metrics.json"
-    metrics = load_json_from_gcs(metrics_uri)
-    if "mean_rmsse" not in metrics:
-        raise SystemExit(f"Training metrics are missing mean_rmsse: {metrics_uri}")
-
-    gate = evaluate_mean_rmsse_gate(
-        observed_mean_rmsse=float(metrics["mean_rmsse"]),
-        maximum_mean_rmsse=args.max_mean_rmsse,
-    )
-    print(
-        "Quality gate: "
-        f"mean RMSSE={gate.observed_mean_rmsse:.6f} < "
-        f"{gate.maximum_mean_rmsse:.6f} -> "
-        f"{'PASS' if gate.passed else 'FAIL'}"
-    )
-    if not gate.passed:
-        raise SystemExit(
-            "Training completed, but the candidate did not beat the validated baseline. "
-            "Artifacts and experiment metrics were kept; Model Registry was not updated."
+    try:
+        promotion = promote_artifact(
+            project=args.project,
+            region=args.region,
+            artifact_uri=training.artifact_uri,
+            display_name=args.model_display_name,
+            model_id=args.model_id,
+            version_alias=args.version_alias,
+            run_name=training.run_name,
+            serving_image_uri=args.serving_image_uri,
+            maximum_mean_rmsse=args.max_mean_rmsse,
         )
+    except PromotionRejectedError as exc:
+        raise SystemExit(str(exc)) from exc
 
-    model = register_model(
-        project=args.project,
-        region=args.region,
-        artifact_uri=training.artifact_uri,
-        display_name=args.model_display_name,
-        model_id=args.model_id,
-        version_alias=args.version_alias,
-        run_name=training.run_name,
-        serving_image_uri=args.serving_image_uri,
-    )
-
-    print(
-        json.dumps(
-            {
-                "run_name": training.run_name,
-                "training_job": training.job_resource_name,
-                "artifact_uri": training.artifact_uri,
-                "mean_rmsse": gate.observed_mean_rmsse,
-                "quality_gate_max_mean_rmsse": gate.maximum_mean_rmsse,
-                "quality_gate_improvement_fraction": gate.improvement_fraction,
-                "model_resource": model.resource_name,
-                "model_version": model.version_id,
-            },
-            indent=2,
-        )
-    )
+    promotion["training_job"] = training.job_resource_name
+    print(json.dumps(promotion, indent=2))
 
 
 if __name__ == "__main__":
