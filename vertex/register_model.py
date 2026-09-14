@@ -70,7 +70,7 @@ def register_model(
         },
         "version_aliases": [version_alias],
         "version_description": (
-            f"Vertex training run {run_name or 'unknown'}; artifacts: {artifact_uri}"
+            f"Training run {run_name or 'unknown'}; artifacts: {artifact_uri}"
         ),
         "sync": True,
     }
