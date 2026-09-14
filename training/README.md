@@ -1,15 +1,29 @@
-# Vertex AI training container
+# Cloud training container
 
-This directory packages the same global LightGBM forecasting logic used by the validated local pipeline.
+This directory packages the same global LightGBM forecasting logic used by the
+validated local pipeline.
 
-The Docker build context must be the repository root because the container copies the shared `src/retailops_ai` package:
+The container is intentionally backend-agnostic: the same image can run on
+Vertex AI Custom Training or Cloud Run Jobs without changing the forecasting
+implementation.
+
+The Docker build context must be the repository root because the container
+copies the shared `src/retailops_ai` package:
 
 ```bash
 docker build -f training/Dockerfile -t retailops-lightgbm-training:local .
 ```
 
-Vertex AI sets `AIP_MODEL_DIR` when the custom job is launched with `base_output_dir`. The training entrypoint writes `model.txt`, `metadata.json`, and `metrics.json` locally, then uploads them to that run-specific GCS model directory.
+The entrypoint writes `model.txt`, `metadata.json`, and `metrics.json` locally,
+then uploads them to the run-specific GCS directory supplied through
+`--artifact-uri`.
 
-The container also logs parameters and validation metrics to Vertex AI Experiments when `VERTEX_EXPERIMENT` is configured.
+Vertex AI sets `AIP_MODEL_DIR` automatically when a custom training job uses a
+`base_output_dir`. Cloud Run Jobs passes the same artifact contract explicitly.
 
-The image is intended for training only. Online endpoint deployment remains V4.
+When an experiment is configured, parameters and validation metrics are still
+logged to Vertex AI Experiments regardless of which compute backend executes the
+container.
+
+The image is intended for training only. Business-facing online serving remains
+a separate Cloud Run workload.
