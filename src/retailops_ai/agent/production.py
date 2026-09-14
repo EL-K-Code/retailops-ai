@@ -8,7 +8,11 @@ from typing import Any
 from google.cloud import bigquery
 
 from retailops_ai.agent.analytics import AnalyticsConfig, RetailAnalyticsTool
-from retailops_ai.agent.checkpointing import CheckpointerConfig, CheckpointerHandle, open_checkpointer
+from retailops_ai.agent.checkpointing import (
+    CheckpointerConfig,
+    CheckpointerHandle,
+    open_checkpointer,
+)
 from retailops_ai.agent.clients import ForecastServiceClient
 from retailops_ai.agent.graph import AgentGraphDependencies, build_agent_graph
 from retailops_ai.agent.knowledge import LexicalKnowledgeRetriever, load_markdown_chunks
