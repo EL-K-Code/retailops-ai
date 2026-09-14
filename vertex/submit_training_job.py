@@ -80,29 +80,39 @@ def submit_training_job(
         container_uri=image_uri,
     )
 
-    job.run(
-        args=[
-            "--project",
-            project,
-            "--location",
-            region,
-            "--dbt-dataset",
-            dbt_dataset,
-            "--train-lookback-days",
-            str(train_lookback_days),
-            "--num-boost-round",
-            str(num_boost_round),
-            "--experiment",
-            experiment,
-            "--run-name",
-            resolved_run_name,
-        ],
-        replica_count=1,
-        machine_type=machine_type,
-        base_output_dir=base_output_dir,
-        service_account=service_account,
-        sync=True,
-    )
+    try:
+        job.run(
+            args=[
+                "--project",
+                project,
+                "--location",
+                region,
+                "--dbt-dataset",
+                dbt_dataset,
+                "--train-lookback-days",
+                str(train_lookback_days),
+                "--num-boost-round",
+                str(num_boost_round),
+                "--experiment",
+                experiment,
+                "--run-name",
+                resolved_run_name,
+            ],
+            replica_count=1,
+            machine_type=machine_type,
+            base_output_dir=base_output_dir,
+            service_account=service_account,
+            sync=True,
+        )
+    except RuntimeError as exc:
+        if "custom_model_training_cpus" in str(exc):
+            raise SystemExit(
+                "Vertex AI custom-training CPU quota is insufficient for "
+                f"machine type {machine_type!r} in region {region!r}. "
+                "Increase the 'Custom model training CPUs per project per region' "
+                "quota before retrying."
+            ) from exc
+        raise
 
     return TrainingResult(
         run_name=resolved_run_name,
