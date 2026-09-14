@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 
 
@@ -37,6 +38,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     return parser.parse_args()
+
+
+def _resolve_gcloud() -> str:
+    executable = shutil.which("gcloud") or shutil.which("gcloud.cmd")
+    if not executable:
+        raise SystemExit(
+            "gcloud CLI was not found on PATH. Verify the Google Cloud SDK installation."
+        )
+    return executable
 
 
 def main() -> None:
@@ -74,8 +84,9 @@ def main() -> None:
             "ML_USE_BQ_STORAGE_API=false",
         ]
     )
+    gcloud = _resolve_gcloud()
     command = [
-        "gcloud",
+        gcloud,
         "run",
         "deploy",
         args.service,
@@ -107,7 +118,7 @@ def main() -> None:
     subprocess.run(command, check=True)
 
     describe = [
-        "gcloud",
+        gcloud,
         "run",
         "services",
         "describe",
