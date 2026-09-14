@@ -21,7 +21,13 @@ Leakage-safe ML features
 LightGBM recursive demand forecasting
       |
       v
-Vertex AI MLOps
+Portable cloud training container
+      |
+      +--> Cloud Run Jobs       [current quota-friendly backend]
+      +--> Vertex AI Training   [target backend when quota-eligible]
+      |
+      v
+GCS artifacts + Vertex AI Experiments
       |
       v
 FastAPI / Cloud Run forecasting service
@@ -41,7 +47,8 @@ LangGraph + Gemini decision agent
 - **V0 — Foundation:** repository, Python project, configuration and dependency management.
 - **V1 — Data Engineering:** GCS, BigQuery, dbt layers, tests and marts.
 - **V2 — Machine Learning:** temporal validation, baselines, LightGBM and recursive forecasting.
-- **V3 — MLOps:** Vertex training, experiments, artifacts, quality gate and Model Registry.
+- **V3 — MLOps:** portable cloud training, experiments, artifacts, quality gate and Model Registry;
+  Vertex AI remains the target training backend and Cloud Run Jobs is the quota-friendly fallback.
 - **V4 — Serving & Cloud:** FastAPI, Cloud Run contract, Artifact Registry and CI/CD.
 - **V5 — Agentic AI:** LangGraph, Gemini, safe tools, RAG and human-in-the-loop workflows.
 - **V6 — Production Quality:** durable agent state, observability, orchestration, monitoring, IaC
@@ -58,7 +65,9 @@ Implemented code paths now include:
 - leakage-aware 28-day forecasting contract;
 - naive and seasonal baselines with MAE, RMSE and bottom-level mean RMSSE;
 - global LightGBM Poisson model with recursive inference;
+- backend-agnostic LightGBM training container shared by local, Cloud Run Jobs and Vertex AI;
 - Vertex AI custom-training, experiment, artifact and quality-gated registry code;
+- Cloud Run Jobs deployment/execution helpers for quota-friendly cloud training;
 - FastAPI business forecasting API with series-scoped BigQuery reads;
 - Cloud Run container/build/deployment contracts and GitHub Actions CI;
 - LangGraph bounded plan-execute-synthesize workflow;
@@ -86,6 +95,7 @@ complete successfully.
 - Recursive forecasts append model predictions, not hidden future labels.
 - Model promotion is gated by measured validation quality.
 - Local, Vertex and Cloud Run paths share the forecasting implementation.
+- Training compute is decoupled from the Forecast API contract consumed by the agent.
 - Secrets and service-account keys are never committed.
 - Expensive or mutating actions require explicit guardrails.
 - Human approval does not imply that the V5 agent changed an external system; it has no mutation
@@ -173,7 +183,8 @@ POST /v1/agent/resume
 - **V1 Data Engineering:** real GCP execution validated end to end.
 - **V2 Machine Learning:** real BigQuery-backed LightGBM run validated and beats all implemented
   baselines.
-- **V3 MLOps:** code implemented; real Vertex AI execution pending.
+- **V3 MLOps:** portable training code implemented; Cloud Run Jobs fallback added for current quota
+  constraints; real cloud training execution and Vertex AI Custom Training validation remain pending.
 - **V4 Serving & Cloud:** code and CI validated; real Cloud Run execution pending.
 - **V5 Agentic AI:** code and CI validated (Ruff + 62 tests under Python 3.12); real Gemini,
   Vertex-embedding, private Cloud Run tool calls, BigQuery agent queries, and cloud HITL execution

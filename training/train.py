@@ -1,8 +1,8 @@
-"""RetailOps AI Vertex AI entrypoint for global LightGBM demand forecasting.
+"""Cloud-agnostic RetailOps AI entrypoint for global LightGBM demand forecasting.
 
-The model logic is shared with ``retailops_ai.ml`` so local and cloud training
-use the same leakage-safe feature contract, recursive validation forecast, and
-evaluation implementation.
+The model logic is shared with ``retailops_ai.ml`` so local, Cloud Run, and
+Vertex AI training use the same leakage-safe feature contract, recursive
+validation forecast, and evaluation implementation.
 """
 
 from __future__ import annotations
@@ -45,10 +45,27 @@ def _env_bool(name: str, default: bool = False) -> bool:
     return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _first_env(*names: str, default: str | None = None) -> str | None:
+    for name in names:
+        value = os.getenv(name)
+        if value:
+            return value
+    return default
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--project", default=os.getenv("GOOGLE_CLOUD_PROJECT"))
-    parser.add_argument("--location", default=os.getenv("VERTEX_REGION", "us-central1"))
+    parser.add_argument(
+        "--location",
+        default=_first_env(
+            "TRAINING_REGION",
+            "VERTEX_REGION",
+            "CLOUD_RUN_REGION",
+            "BQ_LOCATION",
+            default="us-central1",
+        ),
+    )
     parser.add_argument("--dbt-dataset", default=os.getenv("BQ_DBT_DATASET", "retailops"))
     parser.add_argument(
         "--train-lookback-days",
@@ -63,18 +80,36 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--local-model-dir",
         type=Path,
-        default=Path(os.getenv("VERTEX_LOCAL_MODEL_DIR", "/tmp/retailops-model")),
+        default=Path(
+            _first_env(
+                "TRAINING_LOCAL_MODEL_DIR",
+                "VERTEX_LOCAL_MODEL_DIR",
+                default="/tmp/retailops-model",
+            )
+            or "/tmp/retailops-model"
+        ),
     )
     parser.add_argument(
         "--artifact-uri",
-        default=os.getenv("AIP_MODEL_DIR") or os.getenv("VERTEX_MODEL_ARTIFACT_URI"),
+        default=_first_env(
+            "TRAINING_ARTIFACT_URI",
+            "AIP_MODEL_DIR",
+            "VERTEX_MODEL_ARTIFACT_URI",
+        ),
         help="GCS directory for model artifacts. Vertex sets AIP_MODEL_DIR automatically.",
     )
     parser.add_argument(
         "--experiment",
-        default=os.getenv("VERTEX_EXPERIMENT", "retailops-demand-forecasting"),
+        default=_first_env(
+            "TRAINING_EXPERIMENT",
+            "VERTEX_EXPERIMENT",
+            default="retailops-demand-forecasting",
+        ),
     )
-    parser.add_argument("--run-name", default=os.getenv("VERTEX_RUN_NAME"))
+    parser.add_argument(
+        "--run-name",
+        default=_first_env("TRAINING_RUN_NAME", "VERTEX_RUN_NAME"),
+    )
     parser.add_argument(
         "--use-storage-api",
         action=argparse.BooleanOptionalAction,
@@ -235,8 +270,8 @@ def main() -> None:
         print(f"Metadata:       {metadata_path}")
         print(f"Metrics:        {metrics_path}")
         if args.artifact_uri:
-            print(f"VERTEX_ARTIFACT_URI={args.artifact_uri}")
-        print(f"VERTEX_RUN_NAME={run_name}")
+            print(f"TRAINING_ARTIFACT_URI={args.artifact_uri}")
+        print(f"TRAINING_RUN_NAME={run_name}")
 
 
 if __name__ == "__main__":
