@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import shutil
 import subprocess
 
 
@@ -21,6 +22,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _resolve_gcloud() -> str:
+    executable = shutil.which("gcloud") or shutil.which("gcloud.cmd")
+    if not executable:
+        raise SystemExit(
+            "gcloud CLI was not found on PATH. Verify the Google Cloud SDK installation."
+        )
+    return executable
+
+
 def main() -> None:
     args = parse_args()
     if not args.project:
@@ -31,7 +41,7 @@ def main() -> None:
         f"{args.repository}/{args.image}:{args.tag}"
     )
     command = [
-        "gcloud",
+        _resolve_gcloud(),
         "builds",
         "submit",
         "--project",
