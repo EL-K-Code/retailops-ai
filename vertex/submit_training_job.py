@@ -69,7 +69,11 @@ def submit_training_job(
     base_output_dir = f"{output_root.rstrip('/')}/vertex-training/{resolved_run_name}"
     artifact_uri = f"{base_output_dir}/model"
 
-    aiplatform.init(project=project, location=region)
+    aiplatform.init(
+        project=project,
+        location=region,
+        staging_bucket=output_root,
+    )
 
     job = aiplatform.CustomContainerTrainingJob(
         display_name=resolved_run_name,
