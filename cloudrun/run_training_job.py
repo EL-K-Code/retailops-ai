@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 from datetime import UTC, datetime
 
@@ -67,6 +68,15 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _resolve_gcloud() -> str:
+    executable = shutil.which("gcloud") or shutil.which("gcloud.cmd")
+    if not executable:
+        raise SystemExit(
+            "gcloud CLI was not found on PATH. Verify the Google Cloud SDK installation."
+        )
+    return executable
+
+
 def main() -> None:
     args = parse_args()
     missing = [
@@ -111,8 +121,9 @@ def main() -> None:
     if args.experiment:
         training_args.extend(["--experiment", args.experiment])
 
+    gcloud = _resolve_gcloud()
     command = [
-        "gcloud",
+        gcloud,
         "run",
         "jobs",
         "execute",
