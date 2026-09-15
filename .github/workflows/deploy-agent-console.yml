@@ -1,4 +1,4 @@
-name: Deploy RetailOps Agent Console
+name: Deploy RetailOps Platform
 
 on:
   workflow_run:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: retailops-agent-production
+  group: retailops-platform-production
   cancel-in-progress: false
 
 env:
@@ -19,7 +19,9 @@ env:
   REGION: ${{ vars.GCP_REGION }}
   ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
   AGENT_SERVICE: retailops-agent
-  IMAGE_NAME: retailops-agent
+  FORECAST_SERVICE: retailops-api
+  AGENT_IMAGE_NAME: retailops-agent
+  FORECAST_IMAGE_NAME: retailops-api
 
 jobs:
   deploy:
@@ -56,63 +58,92 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Build and push immutable application image
+      - name: Build and push immutable platform images
         shell: bash
         run: |
-          IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${{ steps.revision.outputs.sha }}"
+          set -euo pipefail
 
-          BUILD_ID="$(gcloud builds submit \
-            --project="${PROJECT_ID}" \
-            --region="${REGION}" \
-            --config=agent_api/cloudbuild-console.yaml \
-            --substitutions="_IMAGE_URI=${IMAGE_URI}" \
-            --async \
-            --format='value(id)' \
-            .)"
+          AGENT_IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${AGENT_IMAGE_NAME}:${{ steps.revision.outputs.sha }}"
+          FORECAST_IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${FORECAST_IMAGE_NAME}:${{ steps.revision.outputs.sha }}"
 
-          if [[ -z "${BUILD_ID}" ]]; then
-            echo "Cloud Build did not return a build ID."
-            exit 1
-          fi
+          build_and_wait() {
+            local config="$1"
+            local image_uri="$2"
+            local label="$3"
 
-          echo "Cloud Build ID: ${BUILD_ID}"
-
-          while true; do
-            STATUS="$(gcloud builds describe "${BUILD_ID}" \
+            local build_id
+            build_id="$(gcloud builds submit \
               --project="${PROJECT_ID}" \
               --region="${REGION}" \
-              --format='value(status)')"
+              --config="${config}" \
+              --substitutions="_IMAGE_URI=${image_uri}" \
+              --async \
+              --format='value(id)' \
+              .)"
 
-            echo "Cloud Build status: ${STATUS}"
+            if [[ -z "${build_id}" ]]; then
+              echo "${label}: Cloud Build did not return a build ID."
+              exit 1
+            fi
 
-            case "${STATUS}" in
-              SUCCESS)
-                break
-                ;;
-              FAILURE|INTERNAL_ERROR|TIMEOUT|CANCELLED|EXPIRED)
-                echo "Cloud Build failed with status: ${STATUS}"
-                exit 1
-                ;;
-              *)
-                sleep 10
-                ;;
-            esac
-          done
+            echo "${label} Cloud Build ID: ${build_id}"
+            while true; do
+              local status
+              status="$(gcloud builds describe "${build_id}" \
+                --project="${PROJECT_ID}" \
+                --region="${REGION}" \
+                --format='value(status)')"
+              echo "${label} Cloud Build status: ${status}"
 
-          echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
+              case "${status}" in
+                SUCCESS)
+                  break
+                  ;;
+                FAILURE|INTERNAL_ERROR|TIMEOUT|CANCELLED|EXPIRED)
+                  echo "${label} Cloud Build failed with status: ${status}"
+                  exit 1
+                  ;;
+                *)
+                  sleep 10
+                  ;;
+              esac
+            done
+          }
 
-      - name: Roll out image to existing Cloud Run service
+          build_and_wait "api/cloudbuild.yaml" "${FORECAST_IMAGE_URI}" "Forecast API"
+          build_and_wait "agent_api/cloudbuild-console.yaml" "${AGENT_IMAGE_URI}" "Agent Console"
+
+          echo "FORECAST_IMAGE_URI=${FORECAST_IMAGE_URI}" >> "${GITHUB_ENV}"
+          echo "AGENT_IMAGE_URI=${AGENT_IMAGE_URI}" >> "${GITHUB_ENV}"
+
+      - name: Roll out forecast API image
+        shell: bash
+        run: |
+          gcloud run services update "${FORECAST_SERVICE}" \
+            --project="${PROJECT_ID}" \
+            --region="${REGION}" \
+            --image="${FORECAST_IMAGE_URI}" \
+            --quiet
+
+      - name: Roll out agent console image
         shell: bash
         run: |
           gcloud run services update "${AGENT_SERVICE}" \
             --project="${PROJECT_ID}" \
             --region="${REGION}" \
-            --image="${IMAGE_URI}" \
+            --image="${AGENT_IMAGE_URI}" \
             --quiet
 
-      - name: Verify rollout
+      - name: Verify platform rollout
         shell: bash
         run: |
+          echo "Forecast API"
+          gcloud run services describe "${FORECAST_SERVICE}" \
+            --project="${PROJECT_ID}" \
+            --region="${REGION}" \
+            --format='table(status.latestReadyRevisionName,status.traffic[0].percent,status.url)'
+
+          echo "Agent Console"
           gcloud run services describe "${AGENT_SERVICE}" \
             --project="${PROJECT_ID}" \
             --region="${REGION}" \

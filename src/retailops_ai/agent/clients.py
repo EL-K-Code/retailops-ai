@@ -69,5 +69,24 @@ class ForecastServiceClient:
             },
         )
 
+    def explain(
+        self,
+        *,
+        entities: list[EntityRef],
+        split: str,
+        request_id: str,
+        top_n: int = 6,
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            "/v1/explain",
+            request_id=request_id,
+            json_body={
+                "entities": [entity.model_dump(mode="json") for entity in entities],
+                "split": split,
+                "top_n": top_n,
+            },
+        )
+
     def model_info(self, *, request_id: str) -> dict[str, Any]:
         return self._request("GET", "/v1/model", request_id=request_id)

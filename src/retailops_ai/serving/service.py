@@ -5,12 +5,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
-from typing import Protocol
+from typing import Any, Protocol
 
 import pandas as pd
 
 from retailops_ai.ml.contracts import M5_DEMAND_FORECAST_CONTRACT
 from retailops_ai.ml.lightgbm_pipeline import recursive_forecast
+from retailops_ai.serving.explainability import recursive_tree_shap_summary
 from retailops_ai.serving.model import LoadedForecastModel
 from retailops_ai.serving.repository import EntityKey
 
@@ -77,12 +78,11 @@ class ForecastService:
         self.repository = repository
         self.max_entities = max_entities
 
-    def forecast(
+    def _resolve_request(
         self,
         entities: Sequence[EntityKey],
-        *,
-        split: str = "test",
-    ) -> ForecastBatch:
+        split: str,
+    ) -> tuple[tuple[EntityKey, ...], dict[EntityKey, str], pd.DataFrame, pd.DataFrame]:
         if split not in {"validation", "test"}:
             raise ValueError("split must be validation or test")
         if not entities:
@@ -108,6 +108,18 @@ class ForecastService:
         series_ids = [resolved_keys[entity] for entity in unique_entities]
         seed_history = self.repository.load_seed_history(series_ids, split)
         covariates = self.repository.load_forecast_covariates(series_ids, split)
+        return unique_entities, resolved_keys, seed_history, covariates
+
+    def forecast(
+        self,
+        entities: Sequence[EntityKey],
+        *,
+        split: str = "test",
+    ) -> ForecastBatch:
+        unique_entities, resolved_keys, seed_history, covariates = self._resolve_request(
+            entities,
+            split,
+        )
 
         predictions = recursive_forecast(
             self.model.booster,
@@ -160,3 +172,54 @@ class ForecastService:
             model=self.model.summary(),
             forecasts=tuple(forecasts),
         )
+
+    def explain(
+        self,
+        entities: Sequence[EntityKey],
+        *,
+        split: str = "test",
+        top_n: int = 6,
+    ) -> dict[str, Any]:
+        """Return local TreeSHAP summaries for the recursive forecast horizon."""
+        if top_n <= 0 or top_n > 20:
+            raise ValueError("top_n must be between 1 and 20")
+
+        unique_entities, resolved_keys, seed_history, covariates = self._resolve_request(
+            entities,
+            split,
+        )
+        summaries = recursive_tree_shap_summary(
+            self.model.booster,
+            seed_history,
+            covariates,
+            self.model.category_levels,
+            top_n=top_n,
+        )
+        window = (
+            M5_DEMAND_FORECAST_CONTRACT.validation
+            if split == "validation"
+            else M5_DEMAND_FORECAST_CONTRACT.test
+        )
+        return {
+            "split": split,
+            "forecast_origin": window.start.isoformat(),
+            "horizon_days": M5_DEMAND_FORECAST_CONTRACT.horizon_days,
+            "generated_at": datetime.now(UTC).isoformat(),
+            "model": self.model.summary(),
+            "method": "LightGBM TreeSHAP",
+            "contribution_space": "raw_model_score",
+            "notice": (
+                "For the Poisson objective, TreeSHAP contributions sum to the raw model "
+                "score rather than demand units. Shares represent relative local influence "
+                "across the recursive 28-day forecast."
+            ),
+            "explanations": [
+                {
+                    "series_id": resolved_keys[entity],
+                    "item_id": entity.item_id,
+                    "store_id": entity.store_id,
+                    "features": summaries[resolved_keys[entity]],
+                }
+                for entity in unique_entities
+            ],
+        }

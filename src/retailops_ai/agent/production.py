@@ -25,6 +25,7 @@ from retailops_ai.agent.schemas import (
     ForecastToolRequest,
 )
 from retailops_ai.agent.tools import AgentToolbox
+from retailops_ai.decision.inventory import InventoryScenario, simulate_inventory
 
 
 @dataclass
@@ -80,6 +81,55 @@ class ProductionAgentRuntime:
             split=request.split,
             request_id=request_id,
         )
+
+    def explain_forecast(
+        self,
+        request: ForecastToolRequest,
+        *,
+        request_id: str,
+        top_n: int = 6,
+    ) -> dict[str, Any]:
+        """Return local TreeSHAP evidence from the forecasting service."""
+        return self.forecast_client.explain(
+            entities=request.entities,
+            split=request.split,
+            request_id=request_id,
+            top_n=top_n,
+        )
+
+    def inventory_scenario(
+        self,
+        request: ForecastToolRequest,
+        scenario: InventoryScenario,
+        *,
+        request_id: str,
+    ) -> dict[str, Any]:
+        """Combine a real forecast with explicit user-provided inventory assumptions."""
+        forecast = self.forecast(request, request_id=request_id)
+        forecasts = forecast.get("forecasts") or []
+        if len(forecasts) != 1:
+            raise ValueError("Inventory scenario requires exactly one item/store entity")
+        points = forecasts[0].get("points") or forecasts[0].get("predictions") or []
+        simulation = simulate_inventory(points, scenario)
+        return {
+            "request_id": forecast.get("request_id", request_id),
+            "split": forecast.get("split", request.split),
+            "forecast_origin": forecast.get("forecast_origin"),
+            "horizon_days": forecast.get("horizon_days", len(points)),
+            "model": forecast.get("model", {}),
+            "entity": {
+                "series_id": forecasts[0].get("series_id"),
+                "item_id": forecasts[0].get("item_id"),
+                "store_id": forecasts[0].get("store_id"),
+            },
+            "scenario": {
+                "current_stock": scenario.current_stock,
+                "incoming_units": scenario.incoming_units,
+                "lead_time_days": scenario.lead_time_days,
+                "safety_stock": scenario.safety_stock,
+            },
+            **simulation,
+        }
 
     def model_info(self, *, request_id: str) -> dict[str, Any]:
         return self.forecast_client.model_info(request_id=request_id)
