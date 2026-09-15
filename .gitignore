@@ -34,6 +34,10 @@ Thumbs.db
 # Local ML artifacts
 artifacts/
 
+# React console
+web/node_modules/
+web/dist/
+
 # dbt generated files
 warehouse/dbt/target/
 warehouse/dbt/logs/
