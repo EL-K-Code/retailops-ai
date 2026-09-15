@@ -1,7 +1,9 @@
 import type {
   AgentRunResult,
   AnalyticsResult,
+  ForecastExplanationResponse,
   ForecastResponse,
+  InventoryScenarioResponse,
   KnowledgeDocument,
   OpsStatus,
   Overview,
@@ -87,6 +89,33 @@ export const api = {
       }),
     });
     return normalizeForecastResponse(response);
+  },
+
+  inventoryScenario(payload: {
+    item_id: string;
+    store_id: string;
+    split: Split;
+    current_stock: number;
+    incoming_units: number;
+    lead_time_days: number;
+    safety_stock: number;
+  }) {
+    return fetchJson<InventoryScenarioResponse>('/v1/console/inventory-scenario', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  explainForecast(itemId: string, storeId: string, split: Split = 'test', topN = 6) {
+    return fetchJson<ForecastExplanationResponse>('/v1/console/explain', {
+      method: 'POST',
+      body: JSON.stringify({
+        item_id: itemId,
+        store_id: storeId,
+        split,
+        top_n: topN,
+      }),
+    });
   },
 
   model() {
