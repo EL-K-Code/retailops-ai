@@ -91,7 +91,11 @@ def test_counterfactuals_find_minimum_immediate_units() -> None:
 
     assert result["baseline_risk"] == "high"
     assert result["minimum_immediate_units"] == 6
-    immediate = next(option for option in result["options"] if option["kind"] == "add_immediate_units")
+    immediate = next(
+        option
+        for option in result["options"]
+        if option["kind"] == "add_immediate_units"
+    )
     assert immediate["result"]["risk_level"] == "low"
     assert immediate["scenario"]["current_stock"] == pytest.approx(14.0)
 
@@ -109,6 +113,10 @@ def test_counterfactuals_can_recommend_earlier_purchase_order_arrival() -> None:
 
     assert result["baseline_risk"] in {"high", "medium"}
     assert result["latest_safe_arrival_day"] is not None
-    expedite = [option for option in result["options"] if option["kind"] == "expedite_po"]
+    expedite = [
+        option
+        for option in result["options"]
+        if option["kind"] == "expedite_po"
+    ]
     assert expedite
     assert expedite[0]["result"]["risk_level"] == "low"
