@@ -39,6 +39,27 @@ async function fetchJson<T>(path: string, init: RequestInit = {}): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+function normalizeForecastResponse(response: ForecastResponse): ForecastResponse {
+  const raw = response as ForecastResponse & {
+    horizon_days?: number;
+    forecasts?: Array<Record<string, unknown>>;
+  };
+
+  const normalizedForecasts = Array.isArray(raw.forecasts)
+    ? raw.forecasts.map((forecast) => {
+        const points = Array.isArray(forecast.points) ? forecast.points : [];
+        const predictions = Array.isArray(forecast.predictions) ? forecast.predictions : points;
+        return { ...forecast, predictions };
+      })
+    : raw.forecasts;
+
+  return {
+    ...response,
+    horizon: response.horizon ?? raw.horizon_days,
+    forecasts: normalizedForecasts as ForecastResponse['forecasts'],
+  };
+}
+
 export const api = {
   overview(split: Split = 'test') {
     return fetchJson<Overview>(`/v1/console/overview?split=${split}`);
@@ -57,14 +78,15 @@ export const api = {
     });
   },
 
-  forecast(itemId: string, storeId: string, split: Split = 'test') {
-    return fetchJson<ForecastResponse>('/v1/console/forecast', {
+  async forecast(itemId: string, storeId: string, split: Split = 'test') {
+    const response = await fetchJson<ForecastResponse>('/v1/console/forecast', {
       method: 'POST',
       body: JSON.stringify({
         entities: [{ item_id: itemId, store_id: storeId }],
         split,
       }),
     });
+    return normalizeForecastResponse(response);
   },
 
   model() {
