@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from google.cloud import bigquery
@@ -18,7 +19,11 @@ from retailops_ai.agent.graph import AgentGraphDependencies, build_agent_graph
 from retailops_ai.agent.knowledge import LexicalKnowledgeRetriever, load_markdown_chunks
 from retailops_ai.agent.llm import GeminiDecisionLLM
 from retailops_ai.agent.runtime import AgentRuntime, AgentRuntimeConfig
-from retailops_ai.agent.schemas import AgentRunResult
+from retailops_ai.agent.schemas import (
+    AgentRunResult,
+    AnalyticsRequest,
+    ForecastToolRequest,
+)
 from retailops_ai.agent.tools import AgentToolbox
 
 
@@ -26,6 +31,9 @@ from retailops_ai.agent.tools import AgentToolbox
 class ProductionAgentRuntime:
     runtime: AgentRuntime
     checkpoint: CheckpointerHandle
+    analytics_tool: RetailAnalyticsTool
+    forecast_client: ForecastServiceClient
+    knowledge_dir: Path
 
     @property
     def checkpointer_backend(self) -> str:
@@ -60,6 +68,43 @@ class ProductionAgentRuntime:
             approved=approved,
             reviewer_note=reviewer_note,
         )
+
+    def analytics(self, request: AnalyticsRequest) -> dict[str, Any]:
+        """Return allowlisted BigQuery analytics for the operator console."""
+        return self.analytics_tool.run(request)
+
+    def forecast(self, request: ForecastToolRequest, *, request_id: str) -> dict[str, Any]:
+        """Return the same V4 model forecast consumed by the agent."""
+        return self.forecast_client.forecast(
+            entities=request.entities,
+            split=request.split,
+            request_id=request_id,
+        )
+
+    def model_info(self, *, request_id: str) -> dict[str, Any]:
+        return self.forecast_client.model_info(request_id=request_id)
+
+    def knowledge_documents(self) -> list[dict[str, Any]]:
+        """Expose curated RAG documents as read-only console metadata."""
+        documents: list[dict[str, Any]] = []
+        for path in sorted(self.knowledge_dir.glob("*.md")):
+            text = path.read_text(encoding="utf-8").strip()
+            lines = [line.strip() for line in text.splitlines() if line.strip()]
+            title = next(
+                (line.lstrip("# ").strip() for line in lines if line.startswith("#")),
+                path.stem.replace("_", " ").title(),
+            )
+            excerpt_lines = [line for line in lines if not line.startswith("#")]
+            excerpt = " ".join(excerpt_lines)[:900]
+            documents.append(
+                {
+                    "slug": path.stem,
+                    "title": title,
+                    "excerpt": excerpt,
+                    "characters": len(text),
+                }
+            )
+        return documents
 
     def close(self) -> None:
         self.checkpoint.close()
@@ -102,4 +147,10 @@ def build_production_runtime(config: AgentRuntimeConfig | None = None) -> Produc
         ),
         checkpointer=checkpoint.saver,
     )
-    return ProductionAgentRuntime(runtime=AgentRuntime(graph), checkpoint=checkpoint)
+    return ProductionAgentRuntime(
+        runtime=AgentRuntime(graph),
+        checkpoint=checkpoint,
+        analytics_tool=analytics,
+        forecast_client=forecast_client,
+        knowledge_dir=resolved.knowledge_dir,
+    )
