@@ -71,19 +71,29 @@ export type Overview = {
   model: Record<string, unknown>;
 };
 
+export type ForecastPoint = {
+  horizon?: number;
+  date?: string;
+  prediction?: number;
+  yhat?: number;
+};
+
 export type ForecastResponse = {
   request_id?: string;
   split?: Split;
   forecast_origin?: string;
   horizon?: number;
+  horizon_days?: number;
+  generated_at?: string;
   model?: Record<string, unknown>;
   forecasts?: Array<{
     item_id?: string;
     store_id?: string;
     series_id?: string;
-    predictions?: Array<{ horizon?: number; date?: string; prediction?: number; yhat?: number }>;
+    points?: ForecastPoint[];
+    predictions?: ForecastPoint[];
   }>;
-  predictions?: Array<{ horizon?: number; date?: string; prediction?: number; yhat?: number }>;
+  predictions?: ForecastPoint[];
   [key: string]: unknown;
 };
 
