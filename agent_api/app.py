@@ -35,16 +35,25 @@ class AgentResumeRequest(BaseModel):
 def create_app(runtime_factory: RuntimeFactory = build_agent_runtime) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
+        runtime: Any | None = None
         try:
-            app.state.runtime = runtime_factory()
+            runtime = runtime_factory()
+            app.state.runtime = runtime
             app.state.startup_error = None
             LOGGER.info("RetailOps Agent runtime initialized")
         except Exception as exc:  # pragma: no cover - deployed environment path
             app.state.runtime = None
             app.state.startup_error = str(exc)
             LOGGER.exception("RetailOps Agent runtime initialization failed")
-        yield
-        app.state.runtime = None
+
+        try:
+            yield
+        finally:
+            if runtime is not None:
+                close = getattr(runtime, "close", None)
+                if callable(close):
+                    close()
+            app.state.runtime = None
 
     application = FastAPI(
         title="RetailOps AI Decision Agent",
