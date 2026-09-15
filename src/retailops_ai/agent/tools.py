@@ -8,7 +8,17 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from retailops_ai.agent.knowledge import KnowledgeRetriever
-from retailops_ai.agent.schemas import AgentPlan, AnalyticsRequest, EntityRef
+from retailops_ai.agent.schemas import (
+    AgentPlan,
+    AnalyticsRequest,
+    EntityRef,
+    InventoryDecisionRequest,
+)
+from retailops_ai.decision.inventory import (
+    InventoryScenario,
+    recommend_inventory_counterfactuals,
+    simulate_inventory,
+)
 
 
 class ForecastToolClient(Protocol):
@@ -41,6 +51,71 @@ def _signature(tool: str, payload: Any) -> str:
 
 def _jsonable(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str))
+
+
+def _extract_forecast_points(
+    forecast: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    forecasts = forecast.get("forecasts") or []
+    if len(forecasts) != 1:
+        raise ValueError("inventory decision requires exactly one item/store entity")
+    series = forecasts[0]
+    points = series.get("points") or series.get("predictions") or []
+    if not points:
+        raise ValueError("forecast service returned no forecast points")
+    return series, list(points)
+
+
+def _run_inventory_decision(
+    client: ForecastToolClient,
+    request: InventoryDecisionRequest,
+    *,
+    request_id: str,
+) -> dict[str, Any]:
+    """Combine live forecast evidence with explicit inventory scenario inputs."""
+
+    forecast = client.forecast(
+        entities=[request.entity],
+        split=request.split,
+        request_id=request_id,
+    )
+    series, all_points = _extract_forecast_points(forecast)
+    points = all_points[: request.horizon_days]
+    if len(points) < request.horizon_days:
+        raise ValueError(
+            f"forecast service returned only {len(points)} points for a "
+            f"{request.horizon_days}-day decision horizon"
+        )
+
+    scenario = InventoryScenario(
+        current_stock=request.current_stock,
+        incoming_units=request.incoming_units,
+        lead_time_days=request.lead_time_days,
+        safety_stock=request.safety_stock,
+    )
+    simulation = simulate_inventory(points, scenario)
+    result: dict[str, Any] = {
+        "request_id": forecast.get("request_id", request_id),
+        "split": forecast.get("split", request.split),
+        "forecast_origin": forecast.get("forecast_origin"),
+        "decision_horizon_days": request.horizon_days,
+        "entity": {
+            "series_id": series.get("series_id"),
+            "item_id": series.get("item_id", request.entity.item_id),
+            "store_id": series.get("store_id", request.entity.store_id),
+        },
+        "scenario": {
+            "current_stock": request.current_stock,
+            "incoming_units": request.incoming_units,
+            "lead_time_days": request.lead_time_days,
+            "safety_stock": request.safety_stock,
+        },
+        "forecast_points": points,
+        **simulation,
+    }
+    if request.include_counterfactuals:
+        result["counterfactuals"] = recommend_inventory_counterfactuals(points, scenario)
+    return result
 
 
 class AgentToolbox:
@@ -93,6 +168,19 @@ class AgentToolbox:
                     }
                 )
                 trace.append({"tool": tool, "status": "error", "signature": signature})
+
+        if plan.inventory_decision is not None:
+            inventory_request = plan.inventory_decision
+            payload = inventory_request.model_dump(mode="json")
+            run_once(
+                "inventory_decision",
+                payload,
+                lambda: _run_inventory_decision(
+                    self.forecast_client,
+                    inventory_request,
+                    request_id=request_id,
+                ),
+            )
 
         if plan.forecast is not None:
             forecast = plan.forecast

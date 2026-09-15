@@ -1,9 +1,9 @@
 """Inventory scenario simulation grounded on model forecasts.
 
 The M5 source data does not contain operational stock, purchase orders, or
-supplier lead times.  This module therefore treats inventory values strictly as
+supplier lead times. This module therefore treats inventory values strictly as
 user-provided scenario inputs and combines them with a real forecast through a
-small deterministic decision engine.
+deterministic decision engine.
 """
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ class InventoryScenario:
             raise ValueError("incoming_units must be non-negative")
         if self.safety_stock < 0:
             raise ValueError("safety_stock must be non-negative")
-        if self.lead_time_days < 0 or self.lead_time_days > horizon_days:
-            raise ValueError(f"lead_time_days must be between 0 and {horizon_days}")
+        if self.lead_time_days < 0:
+            raise ValueError("lead_time_days must be non-negative")
 
 
 def _coerce_points(points: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -56,6 +56,15 @@ def _coerce_points(points: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     return normalized
 
 
+def _scenario_payload(scenario: InventoryScenario) -> dict[str, float | int]:
+    return {
+        "current_stock": float(scenario.current_stock),
+        "incoming_units": float(scenario.incoming_units),
+        "lead_time_days": int(scenario.lead_time_days),
+        "safety_stock": float(scenario.safety_stock),
+    }
+
+
 def simulate_inventory(
     points: Sequence[dict[str, Any]],
     scenario: InventoryScenario,
@@ -63,9 +72,9 @@ def simulate_inventory(
     """Project inventory day by day from a real forecast and scenario inputs.
 
     An incoming purchase order is assumed to arrive at the beginning of the
-    configured lead-time day.  A lead time of zero means the incoming units are
-    available before day one.  The function never creates or infers inventory
-    facts; it only transforms explicitly supplied scenario values.
+    configured lead-time day. A lead time of zero means the incoming units are
+    available before day one. A lead time beyond the selected decision horizon
+    is valid: the purchase order simply does not arrive within that horizon.
     """
 
     forecast = _coerce_points(points)
@@ -107,7 +116,12 @@ def simulate_inventory(
             }
         )
 
-    available_units = float(scenario.current_stock + scenario.incoming_units)
+    incoming_within_horizon = (
+        float(scenario.incoming_units)
+        if scenario.lead_time_days <= len(forecast)
+        else 0.0
+    )
+    available_units = float(scenario.current_stock + incoming_within_horizon)
     projected_end_inventory = balance
     shortage_units = max(0.0, -projected_end_inventory)
     safety_stock_gap = max(
@@ -160,4 +174,128 @@ def simulate_inventory(
         "recommended_action": action,
         "recommendation": recommendation,
         "trajectory": trajectory,
+    }
+
+
+def recommend_inventory_counterfactuals(
+    points: Sequence[dict[str, Any]],
+    scenario: InventoryScenario,
+) -> dict[str, Any]:
+    """Find small deterministic scenario changes that remove inventory risk.
+
+    The function answers operational "what would need to change?" questions.
+    It does not optimize cost or execute a purchase order. All returned options
+    remain scenario recommendations for human review.
+    """
+
+    forecast = _coerce_points(points)
+    baseline = simulate_inventory(forecast, scenario)
+    upper_bound = max(
+        1,
+        int(ceil(baseline["forecast_total"] + scenario.safety_stock + 5)),
+    )
+
+    def is_low(candidate: InventoryScenario) -> tuple[bool, dict[str, Any]]:
+        result = simulate_inventory(forecast, candidate)
+        return result["risk_level"] == "low", result
+
+    options: list[dict[str, Any]] = []
+
+    minimum_immediate_units: int | None = None
+    for additional in range(0, upper_bound + 1):
+        candidate = InventoryScenario(
+            current_stock=scenario.current_stock + additional,
+            incoming_units=scenario.incoming_units,
+            lead_time_days=scenario.lead_time_days,
+            safety_stock=scenario.safety_stock,
+        )
+        safe, result = is_low(candidate)
+        if safe:
+            minimum_immediate_units = additional
+            options.append(
+                {
+                    "kind": "add_immediate_units",
+                    "label": "Add immediately available units",
+                    "change": {"additional_units": additional},
+                    "scenario": _scenario_payload(candidate),
+                    "result": {
+                        "risk_level": result["risk_level"],
+                        "projected_end_inventory": result["projected_end_inventory"],
+                        "stockout_day": result["stockout_day"],
+                        "safety_breach_day": result["safety_breach_day"],
+                    },
+                }
+            )
+            break
+
+    minimum_po_increase: int | None = None
+    if scenario.lead_time_days <= len(forecast):
+        for additional in range(0, upper_bound + 1):
+            candidate = InventoryScenario(
+                current_stock=scenario.current_stock,
+                incoming_units=scenario.incoming_units + additional,
+                lead_time_days=scenario.lead_time_days,
+                safety_stock=scenario.safety_stock,
+            )
+            safe, result = is_low(candidate)
+            if safe:
+                minimum_po_increase = additional
+                options.append(
+                    {
+                        "kind": "increase_incoming_po",
+                        "label": "Increase the incoming purchase order",
+                        "change": {"additional_po_units": additional},
+                        "scenario": _scenario_payload(candidate),
+                        "result": {
+                            "risk_level": result["risk_level"],
+                            "projected_end_inventory": result["projected_end_inventory"],
+                            "stockout_day": result["stockout_day"],
+                            "safety_breach_day": result["safety_breach_day"],
+                        },
+                    }
+                )
+                break
+
+    latest_safe_arrival_day: int | None = None
+    if scenario.incoming_units > 0:
+        latest_candidate = min(scenario.lead_time_days, len(forecast))
+        for lead_time in range(latest_candidate, -1, -1):
+            candidate = InventoryScenario(
+                current_stock=scenario.current_stock,
+                incoming_units=scenario.incoming_units,
+                lead_time_days=lead_time,
+                safety_stock=scenario.safety_stock,
+            )
+            safe, result = is_low(candidate)
+            if safe:
+                latest_safe_arrival_day = lead_time
+                if lead_time != scenario.lead_time_days:
+                    options.append(
+                        {
+                            "kind": "expedite_po",
+                            "label": "Receive the existing PO earlier",
+                            "change": {"lead_time_days": lead_time},
+                            "scenario": _scenario_payload(candidate),
+                            "result": {
+                                "risk_level": result["risk_level"],
+                                "projected_end_inventory": result["projected_end_inventory"],
+                                "stockout_day": result["stockout_day"],
+                                "safety_breach_day": result["safety_breach_day"],
+                            },
+                        }
+                    )
+                break
+
+    return {
+        "baseline_risk": baseline["risk_level"],
+        "decision_horizon_days": len(forecast),
+        "minimum_immediate_units": minimum_immediate_units,
+        "minimum_po_increase": minimum_po_increase,
+        "latest_safe_arrival_day": latest_safe_arrival_day,
+        "options": options,
+        "notice": (
+            "Counterfactuals are deterministic scenario comparisons, not automatic orders. "
+            "They do not include supplier constraints, MOQ, carrying cost, margin, or "
+            "service-level optimization."
+        ),
     }

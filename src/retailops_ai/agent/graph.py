@@ -34,6 +34,7 @@ class AgentGraphDependencies:
 def _plan_has_tools(plan: AgentPlan) -> bool:
     return bool(
         plan.forecast
+        or plan.inventory_decision
         or plan.analytics
         or plan.need_model_info
         or plan.knowledge_query
