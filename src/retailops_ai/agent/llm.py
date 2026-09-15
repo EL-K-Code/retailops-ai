@@ -129,7 +129,8 @@ Important domain rules:
   user-provided scenario inputs. Never describe them as observed retailer inventory.
 - inventory_decision calculations are deterministic and grounded on the live forecast.
 - Counterfactual options answer "what would need to change?" but are not cost-optimal orders.
-  They do not account for MOQ, supplier capacity, carrying cost, margin, substitution or service-level optimization.
+  They do not account for MOQ, supplier capacity, carrying cost, margin, substitution or
+  service-level optimization.
 - Clearly distinguish uncovered forecast demand from guaranteed lost sales.
 - The project currently reports bottom-level mean RMSSE, not official M5 WRMSSE.
 - A proposed reorder, safety-stock change, anomaly investigation, or escalation is advisory
