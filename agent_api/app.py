@@ -57,10 +57,11 @@ def create_app(runtime_factory: RuntimeFactory = build_agent_runtime) -> FastAPI
 
     application = FastAPI(
         title="RetailOps AI Decision Agent",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "Grounded LangGraph decision-support agent using the RetailOps forecasting API, "
-            "allowlisted BigQuery analytics, curated RAG context, and human approval gates."
+            "deterministic inventory scenarios, counterfactual decision support, allowlisted "
+            "BigQuery analytics, curated RAG context, and human approval gates."
         ),
         lifespan=lifespan,
     )
@@ -102,8 +103,17 @@ def create_app(runtime_factory: RuntimeFactory = build_agent_runtime) -> FastAPI
         return {
             "agent": "retailops-decision-agent",
             "mode": "read-only decision support",
-            "tools": ["forecast_api", "bigquery_analytics", "model_info", "knowledge_rag"],
+            "tools": [
+                "forecast_api",
+                "inventory_decision",
+                "inventory_counterfactuals",
+                "bigquery_analytics",
+                "model_info",
+                "knowledge_rag",
+            ],
             "analytics_sql": "allowlisted templates only",
+            "inventory_mode": "explicit user-provided scenario inputs",
+            "counterfactual_mode": "deterministic scenario comparison",
             "human_in_the_loop": True,
             "mutating_actions": False,
         }
