@@ -295,6 +295,7 @@ def recommend_inventory_counterfactuals(
         "options": options,
         "notice": (
             "Counterfactuals are deterministic scenario comparisons, not automatic orders. "
-            "They do not include supplier constraints, MOQ, carrying cost, margin, or service-level optimization."
+            "They do not include supplier constraints, MOQ, carrying cost, margin, or "
+            "service-level optimization."
         ),
     }
