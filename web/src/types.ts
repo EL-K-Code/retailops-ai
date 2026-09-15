@@ -97,6 +97,73 @@ export type ForecastResponse = {
   [key: string]: unknown;
 };
 
+export type InventoryTrajectoryPoint = {
+  date: string | null;
+  horizon: number;
+  forecast_demand: number;
+  projected_inventory: number;
+  safety_stock: number;
+};
+
+export type InventoryScenarioResponse = {
+  request_id: string;
+  split: Split;
+  forecast_origin: string;
+  horizon_days: number;
+  model: Record<string, unknown>;
+  entity: {
+    series_id: string;
+    item_id: string;
+    store_id: string;
+  };
+  scenario: {
+    current_stock: number;
+    incoming_units: number;
+    lead_time_days: number;
+    safety_stock: number;
+  };
+  scenario_mode: boolean;
+  scenario_notice: string;
+  forecast_total: number;
+  available_units: number;
+  projected_end_inventory: number;
+  shortage_units: number;
+  safety_stock_gap: number;
+  review_quantity: number;
+  stockout_day: number | null;
+  safety_breach_day: number | null;
+  risk_level: 'low' | 'medium' | 'high';
+  recommended_action: 'monitor' | 'review_reorder' | 'review_safety_stock';
+  recommendation: string;
+  trajectory: InventoryTrajectoryPoint[];
+};
+
+export type FeatureAttribution = {
+  feature: string;
+  mean_abs_contribution: number;
+  mean_contribution: number;
+  share: number;
+  direction: 'up' | 'down';
+};
+
+export type ForecastExplanationResponse = {
+  request_id: string;
+  split: Split;
+  forecast_origin: string;
+  horizon_days: number;
+  generated_at: string;
+  model: Record<string, unknown>;
+  method: string;
+  contribution_space: string;
+  notice: string;
+  explanations: Array<{
+    series_id: string;
+    item_id: string;
+    store_id: string;
+    features: FeatureAttribution[];
+  }>;
+};
+
 export type OpsStatus = {
   service: string;
   environment: string;
