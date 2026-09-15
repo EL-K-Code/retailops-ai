@@ -23,6 +23,19 @@ class ForecastToolRequest(StrictModel):
     split: Literal["validation", "test"] = "test"
 
 
+class InventoryDecisionRequest(StrictModel):
+    """Explicit user-provided inventory scenario for grounded decision support."""
+
+    entity: EntityRef
+    split: Literal["validation", "test"] = "test"
+    current_stock: float = Field(ge=0)
+    incoming_units: float = Field(default=0, ge=0)
+    lead_time_days: int = Field(default=0, ge=0, le=28)
+    safety_stock: float = Field(default=0, ge=0)
+    horizon_days: int = Field(default=28, ge=1, le=28)
+    include_counterfactuals: bool = True
+
+
 class AnalyticsRequest(StrictModel):
     operation: Literal[
         "sales_summary",
@@ -41,6 +54,7 @@ class AgentPlan(StrictModel):
 
     status: Literal["execute", "answer"]
     forecast: ForecastToolRequest | None = None
+    inventory_decision: InventoryDecisionRequest | None = None
     analytics: list[AnalyticsRequest] = Field(default_factory=list, max_length=3)
     need_model_info: bool = False
     knowledge_query: str | None = Field(default=None, max_length=500)
