@@ -60,12 +60,45 @@ jobs:
         shell: bash
         run: |
           IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${{ steps.revision.outputs.sha }}"
-          gcloud builds submit \
+
+          BUILD_ID="$(gcloud builds submit \
             --project="${PROJECT_ID}" \
             --region="${REGION}" \
             --config=agent_api/cloudbuild-console.yaml \
             --substitutions="_IMAGE_URI=${IMAGE_URI}" \
-            .
+            --async \
+            --format='value(id)' \
+            .)"
+
+          if [[ -z "${BUILD_ID}" ]]; then
+            echo "Cloud Build did not return a build ID."
+            exit 1
+          fi
+
+          echo "Cloud Build ID: ${BUILD_ID}"
+
+          while true; do
+            STATUS="$(gcloud builds describe "${BUILD_ID}" \
+              --project="${PROJECT_ID}" \
+              --region="${REGION}" \
+              --format='value(status)')"
+
+            echo "Cloud Build status: ${STATUS}"
+
+            case "${STATUS}" in
+              SUCCESS)
+                break
+                ;;
+              FAILURE|INTERNAL_ERROR|TIMEOUT|CANCELLED|EXPIRED)
+                echo "Cloud Build failed with status: ${STATUS}"
+                exit 1
+                ;;
+              *)
+                sleep 10
+                ;;
+            esac
+          done
+
           echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
 
       - name: Roll out image to existing Cloud Run service
