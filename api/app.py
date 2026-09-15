@@ -31,6 +31,10 @@ class ForecastRequest(BaseModel):
     split: Literal["validation", "test"] = "test"
 
 
+class ExplainRequest(ForecastRequest):
+    top_n: int = Field(default=6, ge=1, le=20)
+
+
 class ForecastPointResponse(BaseModel):
     date: str
     horizon: int
@@ -97,10 +101,10 @@ def create_app(runtime_factory: RuntimeFactory = build_runtime) -> FastAPI:
 
     application = FastAPI(
         title="RetailOps AI Forecasting API",
-        version="1.0.0",
+        version="1.1.0",
         description=(
             "Business-facing 28-day demand forecasting API backed by BigQuery "
-            "features and a versioned LightGBM model artifact."
+            "features, a versioned LightGBM model artifact, and local TreeSHAP explanations."
         ),
         lifespan=lifespan,
     )
@@ -129,6 +133,12 @@ def create_app(runtime_factory: RuntimeFactory = build_runtime) -> FastAPI:
             raise HTTPException(status_code=503, detail="Service not ready")
         return runtime
 
+    def entity_keys(payload: ForecastRequest) -> list[EntityKey]:
+        return [
+            EntityKey(item_id=entity.item_id, store_id=entity.store_id)
+            for entity in payload.entities
+        ]
+
     @application.get("/healthz")
     def healthz() -> dict[str, str]:
         return {"status": "ok"}
@@ -146,18 +156,30 @@ def create_app(runtime_factory: RuntimeFactory = build_runtime) -> FastAPI:
     @application.post("/v1/forecast", response_model=ForecastResponse)
     def forecast(payload: ForecastRequest, request: Request) -> ForecastResponse:
         runtime = require_runtime(request)
-        entities = [
-            EntityKey(item_id=entity.item_id, store_id=entity.store_id)
-            for entity in payload.entities
-        ]
         try:
-            result = runtime.service.forecast(entities, split=payload.split)
+            result = runtime.service.forecast(entity_keys(payload), split=payload.split)
         except UnknownSeriesError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
         return _serialize_forecast(result, request.state.request_id)
+
+    @application.post("/v1/explain")
+    def explain(payload: ExplainRequest, request: Request) -> dict[str, object]:
+        runtime = require_runtime(request)
+        try:
+            result = runtime.service.explain(
+                entity_keys(payload),
+                split=payload.split,
+                top_n=payload.top_n,
+            )
+        except UnknownSeriesError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        return {"request_id": request.state.request_id, **result}
 
     return application
 
