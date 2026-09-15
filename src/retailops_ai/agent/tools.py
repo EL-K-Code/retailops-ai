@@ -53,7 +53,9 @@ def _jsonable(value: Any) -> Any:
     return json.loads(json.dumps(value, default=str))
 
 
-def _extract_forecast_points(forecast: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _extract_forecast_points(
+    forecast: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     forecasts = forecast.get("forecasts") or []
     if len(forecasts) != 1:
         raise ValueError("inventory decision requires exactly one item/store entity")
