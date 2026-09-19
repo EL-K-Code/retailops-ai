@@ -148,3 +148,38 @@ jobs:
             --project="${PROJECT_ID}" \
             --region="${REGION}" \
             --format='table(status.latestReadyRevisionName,status.traffic[0].percent,status.url)'
+
+      - name: Smoke test private forecast service
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          FORECAST_URL="$(gcloud run services describe "${FORECAST_SERVICE}" \
+            --project="${PROJECT_ID}" \
+            --region="${REGION}" \
+            --format='value(status.url)')"
+
+          TOKEN="$(gcloud auth print-identity-token --audiences="${FORECAST_URL}")"
+
+          curl --fail --silent --show-error \
+            --retry 4 --retry-all-errors --retry-delay 3 \
+            -H "Authorization: Bearer ${TOKEN}" \
+            "${FORECAST_URL}/readyz"
+
+          curl --fail --silent --show-error \
+            --retry 3 --retry-all-errors --retry-delay 2 \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -H "x-request-id: cd-smoke-${{ steps.revision.outputs.sha }}" \
+            -X POST \
+            -d '{"entities":[{"item_id":"FOODS_1_001","store_id":"CA_1"}],"split":"test"}' \
+            "${FORECAST_URL}/v1/forecast" \
+            | python -c 'import json,sys; d=json.load(sys.stdin); assert len(d["forecasts"])==1; assert len(d["forecasts"][0]["points"])==28; print("Forecast smoke OK:", d["request_id"])'
+
+      - name: Report IAP-protected agent smoke boundary
+        shell: bash
+        run: |
+          echo "Agent rollout is verified at Cloud Run revision/traffic level above."
+          echo "The browser console is protected by IAP, so HTTP smoke testing requires"
+          echo "an IAP OAuth audience and an IAP-authorized test principal."
+          echo "Do not bypass IAP in CI merely to make the smoke test easier."
