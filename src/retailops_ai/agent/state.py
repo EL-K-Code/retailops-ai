@@ -9,6 +9,7 @@ class AgentState(TypedDict, total=False):
     question: str
     thread_id: str
     user_context: dict[str, Any]
+    active_scenario: dict[str, Any]
     step_count: int
     plan: dict[str, Any]
     evidence: list[dict[str, Any]]

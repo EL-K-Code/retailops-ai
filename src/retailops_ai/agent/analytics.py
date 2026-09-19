@@ -40,7 +40,7 @@ def _window(split: str) -> tuple[Any, Any]:
 
 
 def build_query_spec(request: AnalyticsRequest, config: AnalyticsConfig) -> AnalyticsQuerySpec:
-    """Build only predefined SQL templates. No LLM-generated SQL is accepted."""
+    """Build predefined SQL templates only. LLM-generated SQL is never accepted."""
     start_date, end_date = _window(request.split)
     parameters: list[tuple[str, str, Any]] = [
         ("start_date", "DATE", start_date),
@@ -50,42 +50,32 @@ def build_query_spec(request: AnalyticsRequest, config: AnalyticsConfig) -> Anal
     if request.operation == "sales_summary":
         sql = f"""
 with daily as (
-  select
-    date,
-    sum(units_sold) as daily_units,
-    sum(estimated_sales_value) as estimated_sales_value
+  select date, sum(units_sold) as daily_units,
+         sum(estimated_sales_value) as estimated_sales_value
   from `{config.project}.{config.gold_dataset}.mart_demand_daily`
   where date between @start_date and @end_date
     and (@item_id is null or item_id = @item_id)
     and (@store_id is null or store_id = @store_id)
   group by date
 )
-select
-  min(date) as start_date,
-  max(date) as end_date,
-  count(*) as observed_days,
-  sum(daily_units) as total_units_sold,
-  avg(daily_units) as average_daily_units,
-  max(daily_units) as peak_daily_units,
-  sum(estimated_sales_value) as estimated_sales_value
+select min(date) as start_date, max(date) as end_date, count(*) as observed_days,
+       sum(daily_units) as total_units_sold,
+       avg(daily_units) as average_daily_units,
+       max(daily_units) as peak_daily_units,
+       sum(estimated_sales_value) as estimated_sales_value
 from daily
 """.strip()
-        parameters.extend(
-            [
-                ("item_id", "STRING", request.item_id),
-                ("store_id", "STRING", request.store_id),
-            ]
-        )
+        parameters.extend([
+            ("item_id", "STRING", request.item_id),
+            ("store_id", "STRING", request.store_id),
+        ])
     elif request.operation == "store_summary":
         sql = f"""
-select
-  store_id,
-  min(date) as start_date,
-  max(date) as end_date,
-  sum(total_units_sold) as total_units_sold,
-  avg(active_item_count) as average_active_items,
-  sum(estimated_sales_value) as estimated_sales_value,
-  avg(price_coverage_rate) as average_price_coverage_rate
+select store_id, min(date) as start_date, max(date) as end_date,
+       sum(total_units_sold) as total_units_sold,
+       avg(active_item_count) as average_active_items,
+       sum(estimated_sales_value) as estimated_sales_value,
+       avg(price_coverage_rate) as average_price_coverage_rate
 from `{config.project}.{config.gold_dataset}.mart_store_daily_sales`
 where date between @start_date and @end_date
   and (@store_id is null or store_id = @store_id)
@@ -96,11 +86,9 @@ limit 20
         parameters.append(("store_id", "STRING", request.store_id))
     elif request.operation == "top_products":
         sql = f"""
-select
-  item_id,
-  sum(total_units_sold) as total_units_sold,
-  sum(estimated_sales_value) as estimated_sales_value,
-  avg(price_coverage_rate) as average_price_coverage_rate
+select item_id, sum(total_units_sold) as total_units_sold,
+       sum(estimated_sales_value) as estimated_sales_value,
+       avg(price_coverage_rate) as average_price_coverage_rate
 from `{config.project}.{config.gold_dataset}.mart_product_daily_sales`
 where date between @start_date and @end_date
 group by item_id
@@ -116,7 +104,63 @@ order by mean_rmsse
 limit 20
 """.strip()
         parameters = []
-    else:  # pragma: no cover - protected by the Pydantic Literal
+    elif request.operation == "daily_demand":
+        sql = f"""
+select date, sum(units_sold) as daily_units
+from `{config.project}.{config.gold_dataset}.mart_demand_daily`
+where date between @start_date and @end_date
+  and (@item_id is null or item_id = @item_id)
+  and (@store_id is null or store_id = @store_id)
+group by date
+order by date
+""".strip()
+        parameters.extend([
+            ("item_id", "STRING", request.item_id),
+            ("store_id", "STRING", request.store_id),
+        ])
+    elif request.operation == "demand_anomalies":
+        sql = f"""
+with daily as (
+  select date, item_id, store_id, sum(units_sold) as units_sold
+  from `{config.project}.{config.gold_dataset}.mart_demand_daily`
+  where date between date_sub(@start_date, interval 28 day) and @end_date
+    and (@item_id is null or item_id = @item_id)
+    and (@store_id is null or store_id = @store_id)
+  group by date, item_id, store_id
+),
+scored as (
+  select *,
+    avg(units_sold) over (
+      partition by item_id, store_id order by date
+      rows between 28 preceding and 1 preceding
+    ) as rolling_mean_28,
+    stddev_samp(units_sold) over (
+      partition by item_id, store_id order by date
+      rows between 28 preceding and 1 preceding
+    ) as rolling_std_28
+  from daily
+),
+ranked as (
+  select date, item_id, store_id, units_sold, rolling_mean_28, rolling_std_28,
+    safe_divide(
+      units_sold - rolling_mean_28,
+      nullif(rolling_std_28, 0)
+    ) as anomaly_z
+  from scored
+  where date between @start_date and @end_date
+)
+select *
+from ranked
+where abs(anomaly_z) >= 3
+order by abs(anomaly_z) desc
+limit @top_n
+""".strip()
+        parameters.extend([
+            ("item_id", "STRING", request.item_id),
+            ("store_id", "STRING", request.store_id),
+            ("top_n", "INT64", request.top_n),
+        ])
+    else:
         raise ValueError(f"Unsupported analytics operation: {request.operation}")
 
     return AnalyticsQuerySpec(sql=sql, parameters=parameters)
