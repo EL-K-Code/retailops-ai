@@ -5,6 +5,7 @@ import type {
   ForecastResponse,
   InventoryScenarioResponse,
   KnowledgeDocument,
+  MorningBrief,
   OpsStatus,
   Overview,
   Split,
@@ -68,7 +69,13 @@ export const api = {
   },
 
   analytics(payload: {
-    operation: 'sales_summary' | 'store_summary' | 'top_products' | 'baseline_metrics';
+    operation:
+      | 'sales_summary'
+      | 'store_summary'
+      | 'top_products'
+      | 'baseline_metrics'
+      | 'demand_anomalies'
+      | 'daily_demand';
     split?: Split;
     item_id?: string | null;
     store_id?: string | null;
@@ -99,6 +106,15 @@ export const api = {
     incoming_units: number;
     lead_time_days: number;
     safety_stock: number;
+    economics?: {
+      unit_order_cost: number;
+      holding_cost_per_unit: number;
+      stockout_penalty_per_unit: number;
+      safety_breach_penalty_per_unit: number;
+      min_order_quantity: number;
+      order_increment: number;
+      max_additional_units: number;
+    };
   }) {
     return fetchJson<InventoryScenarioResponse>('/v1/console/inventory-scenario', {
       method: 'POST',
@@ -116,6 +132,10 @@ export const api = {
         top_n: topN,
       }),
     });
+  },
+
+  morningBrief(split: Split = 'test') {
+    return fetchJson<MorningBrief>(`/v1/console/morning-brief?split=${split}`);
   },
 
   model() {
