@@ -678,3 +678,5 @@ body {
   .premium-store-row{grid-template-columns:30px 1fr auto}
   .store-metric,.store-share,.premium-store-row>small{display:none}
 }
+
+.search-action{cursor:pointer;text-align:left}.search-action>svg:last-child{margin-left:auto;color:#697581}.search-action:hover{border-color:#343c45;background:#13171c;color:#aeb7c1}
