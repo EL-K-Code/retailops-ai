@@ -414,13 +414,15 @@ function App() {
       <main className="main-panel">
         <header className="topbar">
           <button className="menu-button" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu size={20} /></button>
-          <div className="search-shell">
-            <Search size={17} />
-            <span>Search products, stores or ask RetailOps AI…</span>
-            <kbd>⌘ K</kbd>
-          </div>
+          <button className="search-shell search-action" onClick={() => setActivePage('copilot')}>
+            <Search size={16} />
+            <span>Search or ask RetailOps AI</span>
+            <ArrowRight size={14} />
+          </button>
           <div className="topbar-actions">
-            <button className="icon-button" aria-label="Notifications"><Bell size={18} />{pendingCount > 0 && <span className="notification-dot" />}</button>
+            <button className="icon-button" aria-label="Open approvals" onClick={() => setActivePage('approvals')}>
+              <Bell size={17} />{pendingCount > 0 && <span className="notification-dot" />}
+            </button>
             <div className="topbar-divider" />
             <div className="topbar-user">
               <div className="operator-avatar small">OP</div>
