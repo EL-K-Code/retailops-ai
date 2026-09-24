@@ -75,7 +75,11 @@ export const api = {
       | 'top_products'
       | 'baseline_metrics'
       | 'demand_anomalies'
-      | 'daily_demand';
+      | 'daily_demand'
+      | 'daily_trend'
+      | 'category_summary'
+      | 'demand_context'
+      | 'weekday_profile';
     split?: Split;
     item_id?: string | null;
     store_id?: string | null;
