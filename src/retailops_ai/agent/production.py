@@ -34,6 +34,7 @@ from retailops_ai.decision.uncertainty import (
     poisson_predictive_band,
 )
 from retailops_ai.monitoring.drift import demand_distribution_drift
+from retailops_ai.workspace.scenarios import build_scenario_store
 
 
 @dataclass
@@ -43,6 +44,7 @@ class ProductionAgentRuntime:
     analytics_tool: RetailAnalyticsTool
     forecast_client: ForecastServiceClient
     knowledge_dir: Path
+    scenario_store: Any
 
     @property
     def checkpointer_backend(self) -> str:
@@ -275,6 +277,97 @@ class ProductionAgentRuntime:
             ],
         }
 
+    def saved_scenarios(self, owner: str) -> list[dict[str, Any]]:
+        return self.scenario_store.list(owner)
+
+    def save_scenario(self, owner: str, payload: dict[str, Any]) -> dict[str, Any]:
+        return self.scenario_store.save(owner, payload)
+
+    def delete_scenario(self, owner: str, scenario_id: str) -> bool:
+        return self.scenario_store.delete(owner, scenario_id)
+
+    def run_saved_scenario(
+        self,
+        *,
+        owner: str,
+        scenario_id: str,
+        request_id: str,
+    ) -> dict[str, Any]:
+        saved = self.scenario_store.get(owner, scenario_id)
+        if saved is None:
+            raise KeyError(scenario_id)
+        economics_payload = saved.get("economics")
+        economics = ReorderEconomics(**economics_payload) if economics_payload else None
+        result = self.inventory_scenario(
+            ForecastToolRequest(
+                entities=[
+                    {
+                        "item_id": saved["item_id"],
+                        "store_id": saved["store_id"],
+                    }
+                ],
+                split=saved["split"],
+            ),
+            InventoryScenario(
+                current_stock=float(saved["current_stock"]),
+                incoming_units=float(saved["incoming_units"]),
+                lead_time_days=int(saved["lead_time_days"]),
+                safety_stock=float(saved["safety_stock"]),
+            ),
+            request_id=request_id,
+            economics=economics,
+        )
+        self.scenario_store.record_run(owner, saved, result)
+        return result
+
+    def decision_history(self, owner: str, *, limit: int = 50) -> list[dict[str, Any]]:
+        return self.scenario_store.history(owner, limit=limit)
+
+    def batch_inventory_scenarios(
+        self,
+        scenarios: list[dict[str, Any]],
+        *,
+        request_id: str,
+    ) -> list[dict[str, Any]]:
+        def evaluate(index_and_scenario: tuple[int, dict[str, Any]]) -> dict[str, Any]:
+            index, payload = index_and_scenario
+            economics_payload = payload.get("economics")
+            economics = ReorderEconomics(**economics_payload) if economics_payload else None
+            result = self.inventory_scenario(
+                ForecastToolRequest(
+                    entities=[
+                        {
+                            "item_id": payload["item_id"],
+                            "store_id": payload["store_id"],
+                        }
+                    ],
+                    split=payload.get("split", "test"),
+                ),
+                InventoryScenario(
+                    current_stock=float(payload["current_stock"]),
+                    incoming_units=float(payload.get("incoming_units", 0)),
+                    lead_time_days=int(payload.get("lead_time_days", 0)),
+                    safety_stock=float(payload.get("safety_stock", 0)),
+                ),
+                request_id=f"{request_id}-{index + 1}",
+                economics=economics,
+            )
+            return {
+                "name": payload.get("name") or f"Scenario {index + 1}",
+                "item_id": payload["item_id"],
+                "store_id": payload["store_id"],
+                "risk_level": result["risk_level"],
+                "forecast_total": result["forecast_total"],
+                "projected_end_inventory": result["projected_end_inventory"],
+                "stockout_day": result["stockout_day"],
+                "safety_breach_day": result["safety_breach_day"],
+                "review_quantity": result["review_quantity"],
+                "recommended_action": result["recommended_action"],
+            }
+
+        with ThreadPoolExecutor(max_workers=min(5, len(scenarios) or 1)) as pool:
+            return list(pool.map(evaluate, enumerate(scenarios)))
+
     def model_info(self, *, request_id: str) -> dict[str, Any]:
         return self.forecast_client.model_info(request_id=request_id)
 
@@ -299,6 +392,7 @@ class ProductionAgentRuntime:
         return documents
 
     def close(self) -> None:
+        self.scenario_store.close()
         self.checkpoint.close()
 
 
@@ -345,4 +439,5 @@ def build_production_runtime(config: AgentRuntimeConfig | None = None) -> Produc
         analytics_tool=analytics,
         forecast_client=forecast_client,
         knowledge_dir=resolved.knowledge_dir,
+        scenario_store=build_scenario_store(),
     )
