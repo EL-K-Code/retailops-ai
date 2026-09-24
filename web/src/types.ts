@@ -335,3 +335,51 @@ export type SessionAuditEvent = {
   threadId?: string;
   tools?: string[];
 };
+
+
+export type SavedScenario = {
+  id: string;
+  owner?: string;
+  name: string;
+  item_id: string;
+  store_id: string;
+  split: Split;
+  current_stock: number;
+  incoming_units: number;
+  lead_time_days: number;
+  safety_stock: number;
+  economics?: Record<string, number> | null;
+  latest_risk?: 'low' | 'medium' | 'high' | null;
+  latest_end_inventory?: number | null;
+  latest_stockout_day?: number | null;
+  last_run_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DecisionHistoryEvent = {
+  id: string;
+  scenario_id?: string | null;
+  scenario_name?: string | null;
+  item_id: string;
+  store_id: string;
+  risk_level?: 'low' | 'medium' | 'high' | null;
+  projected_end_inventory?: number | null;
+  review_quantity?: number | null;
+  stockout_day?: number | null;
+  recommended_action?: string | null;
+  created_at: string;
+};
+
+export type BatchScenarioResult = {
+  name: string;
+  item_id: string;
+  store_id: string;
+  risk_level: 'low' | 'medium' | 'high';
+  forecast_total: number;
+  projected_end_inventory: number;
+  stockout_day: number | null;
+  safety_breach_day: number | null;
+  review_quantity: number;
+  recommended_action: string;
+};
