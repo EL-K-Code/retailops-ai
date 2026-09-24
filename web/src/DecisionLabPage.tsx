@@ -159,8 +159,8 @@ export default function DecisionLabPage() {
       <style>{STYLES}</style>
       <div className="decision-hero">
         <div className="decision-hero-copy">
-          <div className="decision-eyebrow"><Sparkles size={13} /> Decision intelligence lab</div>
-          <h1>Forecast → risk → explain → human decision</h1>
+          <div className="decision-eyebrow"><Sparkles size={13} /> Scenario studio</div>
+          <h1>Test a decision before you make it</h1>
           <p>
             Combine the live 28-day LightGBM forecast with explicit inventory assumptions,
             deterministic stock-risk logic and local TreeSHAP evidence. No inventory value is
@@ -178,7 +178,7 @@ export default function DecisionLabPage() {
       <div className="decision-grid">
         <aside className="decision-card decision-controls">
           <div className="decision-section-head">
-            <div><h2>Inventory scenario</h2><p>Editable simulation inputs</p></div>
+            <div><h2>Inventory scenario</h2><p>Scenario inputs</p></div>
             <span className="scenario-badge">Scenario mode</span>
           </div>
 
@@ -237,7 +237,7 @@ export default function DecisionLabPage() {
 
           <div className="decision-notice">
             <AlertTriangle size={15} />
-            <span>Stock, incoming PO, lead time and safety stock are scenario inputs — not facts contained in the M5 dataset.</span>
+            <span>Scenario inputs are user supplied; M5 contains no operational inventory.</span>
           </div>
           <button className="decision-run" disabled={loading || !itemId.trim() || !storeId.trim()} onClick={() => void run()}>
             {loading ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
@@ -284,7 +284,7 @@ export default function DecisionLabPage() {
           <div className="decision-two">
             <section className="decision-card decision-explain-card">
               <div className="decision-section-head">
-                <div><h2>Why this forecast?</h2><p>Top local drivers across the recursive 28-day horizon</p></div>
+                <div><h2>Why this forecast?</h2><p>Main local forecast drivers</p></div>
                 {explanation && <div className="explain-meta"><BrainCircuit size={12} />{explanation.method}</div>}
               </div>
               {features.length ? (
@@ -334,7 +334,7 @@ export default function DecisionLabPage() {
 
           <section className="decision-card decision-actions-card">
             <div className="decision-section-head">
-              <div><h2>What would need to change?</h2><p>Deterministic counterfactuals that remove inventory risk</p></div>
+              <div><h2>What would need to change?</h2><p>Smallest scenario changes that remove risk</p></div>
               {scenario && <span className={`risk-pill ${scenario.upper_demand_stress.risk_level}`}>stress {scenario.upper_demand_stress.risk_level}</span>}
             </div>
             {scenario && (
@@ -358,7 +358,7 @@ export default function DecisionLabPage() {
 
           <section className="decision-card decision-actions-card">
             <div className="decision-section-head">
-              <div><h2>Cost-aware scenario optimization</h2><p>Advisory quantity under the economic assumptions entered on the left</p></div>
+              <div><h2>Cost-aware scenario optimization</h2><p>Lowest-cost tested quantity under your assumptions</p></div>
             </div>
             {scenario?.reorder_optimization ? (
               <>
