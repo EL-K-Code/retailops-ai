@@ -71,7 +71,7 @@ from daily
         ])
     elif request.operation == "store_summary":
         sql = f"""
-select store_id, min(date) as start_date, max(date) as end_date,
+select store_id, state, min(date) as start_date, max(date) as end_date,
        sum(total_units_sold) as total_units_sold,
        avg(active_item_count) as average_active_items,
        sum(estimated_sales_value) as estimated_sales_value,
@@ -79,7 +79,7 @@ select store_id, min(date) as start_date, max(date) as end_date,
 from `{config.project}.{config.gold_dataset}.mart_store_daily_sales`
 where date between @start_date and @end_date
   and (@store_id is null or store_id = @store_id)
-group by store_id
+group by store_id, state
 order by total_units_sold desc
 limit 20
 """.strip()
@@ -118,6 +118,66 @@ order by date
             ("item_id", "STRING", request.item_id),
             ("store_id", "STRING", request.store_id),
         ])
+    elif request.operation == "daily_trend":
+        sql = f"""
+select
+  date,
+  sum(units_sold) as total_units_sold,
+  sum(estimated_sales_value) as estimated_sales_value,
+  countif(units_sold > 0) as active_series
+from `{config.project}.{config.gold_dataset}.mart_demand_daily`
+where date between @start_date and @end_date
+group by date
+order by date
+""".strip()
+    elif request.operation == "category_summary":
+        sql = f"""
+select
+  category,
+  sum(units_sold) as total_units_sold,
+  sum(estimated_sales_value) as estimated_sales_value,
+  count(distinct item_id) as item_count,
+  count(distinct store_id) as store_count
+from `{config.project}.{config.gold_dataset}.mart_demand_daily`
+where date between @start_date and @end_date
+group by category
+order by total_units_sold desc
+limit @top_n
+""".strip()
+        parameters.append(("top_n", "INT64", request.top_n))
+    elif request.operation == "demand_context":
+        sql = f"""
+select
+  count(distinct date) as observed_days,
+  safe_divide(
+    sum(if(is_weekend, units_sold, 0)),
+    nullif(sum(units_sold), 0)
+  ) as weekend_unit_share,
+  safe_divide(
+    sum(if(snap_active = 1, units_sold, 0)),
+    nullif(sum(units_sold), 0)
+  ) as snap_active_unit_share,
+  safe_divide(
+    sum(if(event_name_1 is not null or event_name_2 is not null, units_sold, 0)),
+    nullif(sum(units_sold), 0)
+  ) as event_unit_share,
+  safe_divide(countif(price_available), count(*)) as price_coverage_rate,
+  avg(sell_price) as average_sell_price
+from `{config.project}.{config.gold_dataset}.mart_demand_daily`
+where date between @start_date and @end_date
+""".strip()
+    elif request.operation == "weekday_profile":
+        sql = f"""
+select
+  extract(dayofweek from date) as day_order,
+  format_date('%a', date) as weekday,
+  safe_divide(sum(units_sold), count(distinct date)) as average_daily_units,
+  sum(units_sold) as total_units_sold
+from `{config.project}.{config.gold_dataset}.mart_demand_daily`
+where date between @start_date and @end_date
+group by day_order, weekday
+order by day_order
+""".strip()
     elif request.operation == "demand_anomalies":
         sql = f"""
 with daily as (
