@@ -47,8 +47,8 @@ export default function MorningBriefPage() {
       <style>{STYLES}</style>
       <section className="morning-hero">
         <div>
-          <div className="morning-kicker"><Sparkles size={12} /> Operator decision brief</div>
-          <h1>What deserves attention first?</h1>
+          <div className="morning-kicker"><Sparkles size={12} /> Decision brief</div>
+          <h1>Today’s priorities</h1>
           <p>
             A data-grounded morning view of unusual demand, model context and distribution
             shift. Inventory risk is added only when explicit operational scenario inputs exist.
@@ -76,7 +76,7 @@ export default function MorningBriefPage() {
       <div className="morning-columns">
         <section className="morning-card">
           <h2>Priority exceptions</h2>
-          <p>Observed sales deviations ranked by robust operational attention signal.</p>
+          <p>Largest observed demand deviations.</p>
           <div className="priority-list">
             {brief?.priorities.length ? brief.priorities.map((priority, index) => (
               <div className="priority-row" key={`${priority.item_id}-${priority.store_id}-${priority.date}-${index}`}>
@@ -93,7 +93,7 @@ export default function MorningBriefPage() {
 
         <section className="morning-card">
           <h2>Monitoring context</h2>
-          <p>Short-window diagnostic, not an automatic retraining trigger.</p>
+          <p>Validation vs test distribution signal.</p>
           <div className="drift-box">
             <div className="drift-status"><span>Population Stability Index</span><strong>{drift ? number.format(drift.psi) : '—'}</strong></div>
             <div className="drift-status"><span>Mean shift (σ)</span><strong>{drift ? number.format(drift.mean_shift_std) : '—'}</strong></div>
