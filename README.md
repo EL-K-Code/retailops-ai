@@ -229,8 +229,34 @@ POST /v1/console/inventory-scenario
 POST /v1/console/explain
 GET  /v1/console/morning-brief
 GET  /v1/console/drift
+GET  /v1/console/scenarios
+POST /v1/console/scenarios
+DELETE /v1/console/scenarios/{id}
+POST /v1/console/scenarios/{id}/run
+GET  /v1/console/decision-history
+POST /v1/console/batch-scenarios
 GET  /v1/ops/status
 ~~~
+
+## V8 — Premium SaaS Workspace
+
+V8 focuses on operator usability rather than adding another model:
+
+- quieter, denser SaaS visual hierarchy with reduced explanatory copy;
+- richer dashboard analytics: daily demand pulse, category mix, weekday profile,
+  store contribution, demand variability and demand-context indicators;
+- parallel loading of dashboard analytics to limit home-screen latency;
+- functional top-bar navigation instead of decorative controls;
+- saved planning scenarios scoped to the authenticated operator;
+- PostgreSQL-backed scenario persistence when the durable Cloud SQL backend is enabled;
+- server-side decision history for saved scenario runs;
+- CSV portfolio scan for up to 25 explicit inventory scenarios at once;
+- reusable Decision Lab scenarios with the same human-governance boundary.
+
+The portfolio scanner is intentionally scenario-driven: M5 still does not provide real inventory,
+purchase orders or supplier lead times. Those values always come from the operator or uploaded CSV.
+
+See **docs/v8_premium_workspace.md** for the product and data contract.
 
 ## Engineering discipline
 

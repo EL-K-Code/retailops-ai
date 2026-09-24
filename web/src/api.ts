@@ -9,6 +9,9 @@ import type {
   OpsStatus,
   Overview,
   Split,
+  SavedScenario,
+  DecisionHistoryEvent,
+  BatchScenarioResult,
 } from './types';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
@@ -75,7 +78,11 @@ export const api = {
       | 'top_products'
       | 'baseline_metrics'
       | 'demand_anomalies'
-      | 'daily_demand';
+      | 'daily_demand'
+      | 'daily_trend'
+      | 'category_summary'
+      | 'demand_context'
+      | 'weekday_profile';
     split?: Split;
     item_id?: string | null;
     store_id?: string | null;
@@ -119,6 +126,68 @@ export const api = {
     return fetchJson<InventoryScenarioResponse>('/v1/console/inventory-scenario', {
       method: 'POST',
       body: JSON.stringify(payload),
+    });
+  },
+
+  savedScenarios() {
+    return fetchJson<{ storage_backend: string; scenarios: SavedScenario[] }>('/v1/console/scenarios');
+  },
+
+  saveScenario(payload: {
+    id?: string;
+    name: string;
+    item_id: string;
+    store_id: string;
+    split: Split;
+    current_stock: number;
+    incoming_units: number;
+    lead_time_days: number;
+    safety_stock: number;
+    economics?: {
+      unit_order_cost: number;
+      holding_cost_per_unit: number;
+      stockout_penalty_per_unit: number;
+      safety_breach_penalty_per_unit: number;
+      min_order_quantity: number;
+      order_increment: number;
+      max_additional_units: number;
+    };
+  }) {
+    return fetchJson<{ scenario: SavedScenario }>('/v1/console/scenarios', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  deleteScenario(id: string) {
+    return fetchJson<{ deleted: boolean; id: string }>(`/v1/console/scenarios/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  runSavedScenario(id: string) {
+    return fetchJson<InventoryScenarioResponse>(`/v1/console/scenarios/${encodeURIComponent(id)}/run`, {
+      method: 'POST',
+    });
+  },
+
+  decisionHistory(limit = 30) {
+    return fetchJson<{ events: DecisionHistoryEvent[] }>(`/v1/console/decision-history?limit=${limit}`);
+  },
+
+  batchScenarios(scenarios: Array<{
+    name?: string;
+    item_id: string;
+    store_id: string;
+    split: Split;
+    current_stock: number;
+    incoming_units: number;
+    lead_time_days: number;
+    safety_stock: number;
+  }>) {
+    return fetchJson<{ count: number; results: BatchScenarioResult[] }>('/v1/console/batch-scenarios', {
+      method: 'POST',
+      body: JSON.stringify({ scenarios }),
     });
   },
 

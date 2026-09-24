@@ -38,7 +38,7 @@ const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });
 const percent = new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 1 });
 
 const STYLES = `
-.decision-lab{display:grid;gap:18px;color:#eaf2f8}.decision-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:4px 2px 8px}.decision-hero-copy{max-width:760px}.decision-eyebrow{display:flex;align-items:center;gap:7px;color:#59e1c3;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.decision-hero h1{margin:8px 0 7px;font-size:28px;line-height:1.05}.decision-hero p{margin:0;color:#8da2b5;font-size:12px;line-height:1.65}.decision-stack{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;max-width:430px}.decision-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #20364b;border-radius:999px;background:#0b1928;color:#9fb4c7;font-size:9px;font-weight:700}.decision-chip strong{color:#e7f1f7}.decision-grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px}.decision-card{border:1px solid #1c3044;border-radius:17px;background:linear-gradient(180deg,rgba(13,28,43,.98),rgba(8,19,31,.98));box-shadow:0 18px 45px rgba(0,0,0,.18)}.decision-controls{align-self:start;padding:18px;position:sticky;top:88px}.decision-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}.decision-section-head h2{margin:0;font-size:14px}.decision-section-head p{margin:4px 0 0;color:#758ba0;font-size:10px;line-height:1.5}.scenario-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid rgba(246,190,90,.25);border-radius:8px;background:rgba(246,190,90,.08);color:#f6c46e;font-size:8px;font-weight:800;white-space:nowrap}.decision-field{display:grid;gap:6px;margin:11px 0;color:#8fa5b7;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.decision-field input,.decision-field select{width:100%;box-sizing:border-box;height:39px;padding:0 11px;border:1px solid #20364b;border-radius:10px;outline:none;background:#081522;color:#eaf2f8;font:inherit;font-size:11px;text-transform:none;letter-spacing:0}.decision-field input:focus,.decision-field select:focus{border-color:#3f8f86;box-shadow:0 0 0 3px rgba(82,225,195,.06)}.decision-fields-two{display:grid;grid-template-columns:1fr 1fr;gap:9px}.decision-notice{display:flex;gap:8px;margin:14px 0;padding:10px;border:1px solid rgba(246,190,90,.18);border-radius:11px;background:rgba(246,190,90,.05);color:#b5a47f;font-size:9px;line-height:1.5}.decision-run{display:flex;width:100%;height:42px;align-items:center;justify-content:center;gap:8px;border:0;border-radius:11px;background:linear-gradient(135deg,#52e1c3,#5ea6ff);color:#04131b;font:inherit;font-size:10px;font-weight:900;cursor:pointer}.decision-run:disabled{cursor:not-allowed;opacity:.55}.decision-error{display:flex;gap:7px;margin-top:10px;padding:9px 10px;border:1px solid rgba(248,113,113,.2);border-radius:10px;background:rgba(248,113,113,.06);color:#f3a1a1;font-size:9px}.decision-main{display:grid;gap:16px}.decision-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.decision-kpi{padding:15px}.decision-kpi-top{display:flex;align-items:center;justify-content:space-between;color:#6f879b}.decision-kpi-icon{display:grid;width:30px;height:30px;place-items:center;border:1px solid #1f3a4d;border-radius:9px;background:#0a1b2a;color:#58ddc1}.decision-kpi-label{margin-top:14px;color:#7d92a5;font-size:9px}.decision-kpi-value{margin-top:4px;color:#f1f7fa;font-size:22px;font-weight:800;letter-spacing:-.03em}.decision-kpi-helper{margin-top:4px;color:#5f768a;font-size:8px;line-height:1.4}.risk-pill{padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900;text-transform:uppercase}.risk-pill.low{background:rgba(82,225,195,.09);color:#5be3c5}.risk-pill.medium{background:rgba(246,190,90,.1);color:#f6c46e}.risk-pill.high{background:rgba(248,113,113,.1);color:#f58e8e}.decision-chart-card,.decision-explain-card,.decision-reco-card{padding:17px}.decision-chart{height:330px}.decision-placeholder{display:grid;height:280px;place-items:center;text-align:center;color:#60788d}.decision-placeholder div{max-width:360px}.decision-placeholder strong{display:block;margin:8px 0 5px;color:#b9c9d6;font-size:12px}.decision-placeholder span{font-size:9px;line-height:1.5}.decision-two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:16px}.explain-meta{display:flex;align-items:center;gap:7px;color:#71899c;font-size:8px}.explain-bars{height:280px}.feature-list{display:grid;gap:7px;margin-top:8px}.feature-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px;align-items:center;padding:8px 9px;border:1px solid #172b3e;border-radius:9px;background:#091725}.feature-row strong{overflow:hidden;color:#cddbe5;font-size:9px;text-overflow:ellipsis}.feature-share{color:#8198aa;font-size:9px;font-variant-numeric:tabular-nums}.feature-direction{display:inline-flex;align-items:center;gap:3px;font-size:8px;font-weight:800}.feature-direction.up{color:#5ee1c4}.feature-direction.down{color:#f39b8c}.decision-reco{display:grid;gap:10px}.decision-reco-top{display:flex;align-items:center;gap:10px}.decision-reco-icon{display:grid;width:38px;height:38px;place-items:center;border:1px solid rgba(94,166,255,.18);border-radius:11px;background:rgba(94,166,255,.07);color:#6eafff}.decision-reco h3{margin:0;font-size:12px}.decision-reco p{margin:3px 0 0;color:#7f95a8;font-size:9px}.decision-reco-text{padding:12px;border:1px solid #1a3145;border-radius:11px;background:#081623;color:#c5d5df;font-size:10px;line-height:1.6}.decision-trust{display:flex;gap:8px;padding:10px;border:1px solid rgba(82,225,195,.14);border-radius:10px;background:rgba(82,225,195,.04);color:#83a699;font-size:8px;line-height:1.5}.decision-actions-card{padding:17px}.counter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.counter-option{padding:12px;border:1px solid #1a3145;border-radius:11px;background:#081623}.counter-option strong{display:block;font-size:10px}.counter-option span{display:block;margin-top:5px;color:#7891a5;font-size:8px;line-height:1.5}.decision-econ-label{margin-top:15px;color:#59e1c3;font-size:8px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.stress-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stress-strip div{padding:10px;border:1px solid #1a3145;border-radius:10px;background:#081623}.stress-strip span{display:block;color:#6f879b;font-size:8px}.stress-strip strong{display:block;margin-top:4px;font-size:11px}.spin{animation:decision-spin .8s linear infinite}@keyframes decision-spin{to{transform:rotate(360deg)}}@media(max-width:1120px){.decision-grid{grid-template-columns:1fr}.decision-controls{position:static}.decision-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.decision-two{grid-template-columns:1fr}}@media(max-width:620px){.decision-hero{display:grid}.decision-stack{justify-content:flex-start}.decision-fields-two,.decision-kpis{grid-template-columns:1fr}.decision-chart{height:280px}}
+.decision-lab{display:grid;gap:18px;color:#eaf2f8}.decision-hero{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:4px 2px 8px}.decision-hero-copy{max-width:760px}.decision-eyebrow{display:flex;align-items:center;gap:7px;color:#59e1c3;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}.decision-hero h1{margin:8px 0 7px;font-size:28px;line-height:1.05}.decision-hero p{margin:0;color:#8da2b5;font-size:12px;line-height:1.65}.decision-stack{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px;max-width:430px}.decision-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;border:1px solid #20364b;border-radius:999px;background:#0b1928;color:#9fb4c7;font-size:9px;font-weight:700}.decision-chip strong{color:#e7f1f7}.decision-grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px}.decision-card{border:1px solid #1c3044;border-radius:17px;background:linear-gradient(180deg,rgba(13,28,43,.98),rgba(8,19,31,.98));box-shadow:0 18px 45px rgba(0,0,0,.18)}.decision-controls{align-self:start;padding:18px;position:sticky;top:88px}.decision-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:15px}.decision-section-head h2{margin:0;font-size:14px}.decision-section-head p{margin:4px 0 0;color:#758ba0;font-size:10px;line-height:1.5}.scenario-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 7px;border:1px solid rgba(246,190,90,.25);border-radius:8px;background:rgba(246,190,90,.08);color:#f6c46e;font-size:8px;font-weight:800;white-space:nowrap}.decision-field{display:grid;gap:6px;margin:11px 0;color:#8fa5b7;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em}.decision-field input,.decision-field select{width:100%;box-sizing:border-box;height:39px;padding:0 11px;border:1px solid #20364b;border-radius:10px;outline:none;background:#081522;color:#eaf2f8;font:inherit;font-size:11px;text-transform:none;letter-spacing:0}.decision-field input:focus,.decision-field select:focus{border-color:#3f8f86;box-shadow:0 0 0 3px rgba(82,225,195,.06)}.decision-fields-two{display:grid;grid-template-columns:1fr 1fr;gap:9px}.decision-notice{display:flex;gap:8px;margin:14px 0;padding:10px;border:1px solid rgba(246,190,90,.18);border-radius:11px;background:rgba(246,190,90,.05);color:#b5a47f;font-size:9px;line-height:1.5}.decision-action-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:7px}.decision-run{display:flex;width:100%;height:40px;align-items:center;justify-content:center;gap:8px;border:0;border-radius:9px;background:#65ddc0;color:#071511;font:inherit;font-size:9px;font-weight:900;cursor:pointer}.decision-run:disabled{cursor:not-allowed;opacity:.55}.decision-save{height:40px;display:inline-flex;align-items:center;gap:5px;padding:0 10px;border:1px solid #2a3540;border-radius:9px;background:#0d1823;color:#a7b7c5;font:inherit;font-size:8.5px;font-weight:750;cursor:pointer}.decision-save:disabled{opacity:.5;cursor:not-allowed}.decision-save-status{margin-top:6px;color:#6ed9bb;font-size:8px}.decision-error{display:flex;gap:7px;margin-top:10px;padding:9px 10px;border:1px solid rgba(248,113,113,.2);border-radius:10px;background:rgba(248,113,113,.06);color:#f3a1a1;font-size:9px}.decision-main{display:grid;gap:16px}.decision-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.decision-kpi{padding:15px}.decision-kpi-top{display:flex;align-items:center;justify-content:space-between;color:#6f879b}.decision-kpi-icon{display:grid;width:30px;height:30px;place-items:center;border:1px solid #1f3a4d;border-radius:9px;background:#0a1b2a;color:#58ddc1}.decision-kpi-label{margin-top:14px;color:#7d92a5;font-size:9px}.decision-kpi-value{margin-top:4px;color:#f1f7fa;font-size:22px;font-weight:800;letter-spacing:-.03em}.decision-kpi-helper{margin-top:4px;color:#5f768a;font-size:8px;line-height:1.4}.risk-pill{padding:5px 7px;border-radius:999px;font-size:8px;font-weight:900;text-transform:uppercase}.risk-pill.low{background:rgba(82,225,195,.09);color:#5be3c5}.risk-pill.medium{background:rgba(246,190,90,.1);color:#f6c46e}.risk-pill.high{background:rgba(248,113,113,.1);color:#f58e8e}.decision-chart-card,.decision-explain-card,.decision-reco-card{padding:17px}.decision-chart{height:330px}.decision-placeholder{display:grid;height:280px;place-items:center;text-align:center;color:#60788d}.decision-placeholder div{max-width:360px}.decision-placeholder strong{display:block;margin:8px 0 5px;color:#b9c9d6;font-size:12px}.decision-placeholder span{font-size:9px;line-height:1.5}.decision-two{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:16px}.explain-meta{display:flex;align-items:center;gap:7px;color:#71899c;font-size:8px}.explain-bars{height:280px}.feature-list{display:grid;gap:7px;margin-top:8px}.feature-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px;align-items:center;padding:8px 9px;border:1px solid #172b3e;border-radius:9px;background:#091725}.feature-row strong{overflow:hidden;color:#cddbe5;font-size:9px;text-overflow:ellipsis}.feature-share{color:#8198aa;font-size:9px;font-variant-numeric:tabular-nums}.feature-direction{display:inline-flex;align-items:center;gap:3px;font-size:8px;font-weight:800}.feature-direction.up{color:#5ee1c4}.feature-direction.down{color:#f39b8c}.decision-reco{display:grid;gap:10px}.decision-reco-top{display:flex;align-items:center;gap:10px}.decision-reco-icon{display:grid;width:38px;height:38px;place-items:center;border:1px solid rgba(94,166,255,.18);border-radius:11px;background:rgba(94,166,255,.07);color:#6eafff}.decision-reco h3{margin:0;font-size:12px}.decision-reco p{margin:3px 0 0;color:#7f95a8;font-size:9px}.decision-reco-text{padding:12px;border:1px solid #1a3145;border-radius:11px;background:#081623;color:#c5d5df;font-size:10px;line-height:1.6}.decision-trust{display:flex;gap:8px;padding:10px;border:1px solid rgba(82,225,195,.14);border-radius:10px;background:rgba(82,225,195,.04);color:#83a699;font-size:8px;line-height:1.5}.decision-actions-card{padding:17px}.counter-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.counter-option{padding:12px;border:1px solid #1a3145;border-radius:11px;background:#081623}.counter-option strong{display:block;font-size:10px}.counter-option span{display:block;margin-top:5px;color:#7891a5;font-size:8px;line-height:1.5}.decision-econ-label{margin-top:15px;color:#59e1c3;font-size:8px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.stress-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stress-strip div{padding:10px;border:1px solid #1a3145;border-radius:10px;background:#081623}.stress-strip span{display:block;color:#6f879b;font-size:8px}.stress-strip strong{display:block;margin-top:4px;font-size:11px}.spin{animation:decision-spin .8s linear infinite}@keyframes decision-spin{to{transform:rotate(360deg)}}@media(max-width:1120px){.decision-grid{grid-template-columns:1fr}.decision-controls{position:static}.decision-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.decision-two{grid-template-columns:1fr}}@media(max-width:620px){.decision-hero{display:grid}.decision-stack{justify-content:flex-start}.decision-fields-two,.decision-kpis{grid-template-columns:1fr}.decision-chart{height:280px}}
 `;
 
 function Kpi({ icon: Icon, label, value, helper, risk }: {
@@ -93,6 +93,8 @@ export default function DecisionLabPage() {
   const [minOrderQuantity, setMinOrderQuantity] = useState(1);
   const [orderIncrement, setOrderIncrement] = useState(1);
   const [maxAdditionalUnits, setMaxAdditionalUnits] = useState(60);
+  const [scenarioName, setScenarioName] = useState('CA_1 replenishment');
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [scenario, setScenario] = useState<InventoryScenarioResponse | null>(null);
   const [explanation, setExplanation] = useState<ForecastExplanationResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -152,6 +154,34 @@ export default function DecisionLabPage() {
     }
   };
 
+  const saveScenario = async () => {
+    setSaveStatus('Saving…');
+    try {
+      await api.saveScenario({
+        name: scenarioName.trim() || `${itemId} · ${storeId}`,
+        item_id: itemId.trim(),
+        store_id: storeId.trim(),
+        split,
+        current_stock: Number(currentStock),
+        incoming_units: Number(incomingUnits),
+        lead_time_days: Number(leadTimeDays),
+        safety_stock: Number(safetyStock),
+        economics: {
+          unit_order_cost: Number(unitOrderCost),
+          holding_cost_per_unit: Number(holdingCost),
+          stockout_penalty_per_unit: Number(stockoutPenalty),
+          safety_breach_penalty_per_unit: Number(safetyPenalty),
+          min_order_quantity: Number(minOrderQuantity),
+          order_increment: Number(orderIncrement),
+          max_additional_units: Number(maxAdditionalUnits),
+        },
+      });
+      setSaveStatus('Saved');
+    } catch (caught) {
+      setSaveStatus(caught instanceof Error ? caught.message : 'Save failed');
+    }
+  };
+
   const risk = scenario?.risk_level;
 
   return (
@@ -159,8 +189,8 @@ export default function DecisionLabPage() {
       <style>{STYLES}</style>
       <div className="decision-hero">
         <div className="decision-hero-copy">
-          <div className="decision-eyebrow"><Sparkles size={13} /> Decision intelligence lab</div>
-          <h1>Forecast → risk → explain → human decision</h1>
+          <div className="decision-eyebrow"><Sparkles size={13} /> Scenario studio</div>
+          <h1>Test a decision before you make it</h1>
           <p>
             Combine the live 28-day LightGBM forecast with explicit inventory assumptions,
             deterministic stock-risk logic and local TreeSHAP evidence. No inventory value is
@@ -178,10 +208,13 @@ export default function DecisionLabPage() {
       <div className="decision-grid">
         <aside className="decision-card decision-controls">
           <div className="decision-section-head">
-            <div><h2>Inventory scenario</h2><p>Editable simulation inputs</p></div>
+            <div><h2>Inventory scenario</h2><p>Scenario inputs</p></div>
             <span className="scenario-badge">Scenario mode</span>
           </div>
 
+          <label className="decision-field">Scenario
+            <input value={scenarioName} onChange={(event) => { setScenarioName(event.target.value); setSaveStatus(null); }} />
+          </label>
           <label className="decision-field">Item ID
             <input value={itemId} onChange={(event) => setItemId(event.target.value)} />
           </label>
@@ -237,12 +270,18 @@ export default function DecisionLabPage() {
 
           <div className="decision-notice">
             <AlertTriangle size={15} />
-            <span>Stock, incoming PO, lead time and safety stock are scenario inputs — not facts contained in the M5 dataset.</span>
+            <span>Scenario inputs are user supplied; M5 contains no operational inventory.</span>
           </div>
-          <button className="decision-run" disabled={loading || !itemId.trim() || !storeId.trim()} onClick={() => void run()}>
-            {loading ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
-            {loading ? 'Running live decision stack…' : 'Run decision scenario'}
-          </button>
+          <div className="decision-action-row">
+            <button className="decision-run" disabled={loading || !itemId.trim() || !storeId.trim()} onClick={() => void run()}>
+              {loading ? <RefreshCw className="spin" size={16} /> : <Sparkles size={16} />}
+              {loading ? 'Running…' : 'Run scenario'}
+            </button>
+            <button className="decision-save" disabled={!itemId.trim() || !storeId.trim()} onClick={() => void saveScenario()}>
+              <CheckCircle2 size={14} /> Save
+            </button>
+          </div>
+          {saveStatus && <div className="decision-save-status">{saveStatus}</div>}
           {error && <div className="decision-error"><AlertTriangle size={14} />{error}</div>}
         </aside>
 
@@ -284,7 +323,7 @@ export default function DecisionLabPage() {
           <div className="decision-two">
             <section className="decision-card decision-explain-card">
               <div className="decision-section-head">
-                <div><h2>Why this forecast?</h2><p>Top local drivers across the recursive 28-day horizon</p></div>
+                <div><h2>Why this forecast?</h2><p>Main local forecast drivers</p></div>
                 {explanation && <div className="explain-meta"><BrainCircuit size={12} />{explanation.method}</div>}
               </div>
               {features.length ? (
@@ -334,7 +373,7 @@ export default function DecisionLabPage() {
 
           <section className="decision-card decision-actions-card">
             <div className="decision-section-head">
-              <div><h2>What would need to change?</h2><p>Deterministic counterfactuals that remove inventory risk</p></div>
+              <div><h2>What would need to change?</h2><p>Smallest scenario changes that remove risk</p></div>
               {scenario && <span className={`risk-pill ${scenario.upper_demand_stress.risk_level}`}>stress {scenario.upper_demand_stress.risk_level}</span>}
             </div>
             {scenario && (
@@ -358,7 +397,7 @@ export default function DecisionLabPage() {
 
           <section className="decision-card decision-actions-card">
             <div className="decision-section-head">
-              <div><h2>Cost-aware scenario optimization</h2><p>Advisory quantity under the economic assumptions entered on the left</p></div>
+              <div><h2>Cost-aware scenario optimization</h2><p>Lowest-cost tested quantity under your assumptions</p></div>
             </div>
             {scenario?.reorder_optimization ? (
               <>

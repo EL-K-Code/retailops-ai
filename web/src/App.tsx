@@ -90,95 +90,51 @@ type ChatMessage = {
 };
 
 const NAV_GROUPS: Array<{ label: string; items: NavItem[] }> = [
-  { label: 'Overview', items: [{ id: 'dashboard', label: 'Dashboard', icon: CircleGauge }] },
   {
-    label: 'Decision intelligence',
+    label: 'Workspace',
     items: [
+      { id: 'dashboard', label: 'Overview', icon: CircleGauge },
       { id: 'forecasts', label: 'Forecasts', icon: TrendingUp },
       { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-      { id: 'copilot', label: 'AI Copilot', icon: Sparkles },
     ],
   },
   {
-    label: 'Decisions',
+    label: 'Decide',
     items: [
+      { id: 'copilot', label: 'AI Copilot', icon: Sparkles },
       { id: 'recommendations', label: 'Recommendations', icon: BrainCircuit },
       { id: 'approvals', label: 'Approvals', icon: UserRoundCheck },
     ],
   },
   {
-    label: 'AI & data',
+    label: 'Operate',
     items: [
-      { id: 'knowledge', label: 'Knowledge Base', icon: FileText },
-      { id: 'models', label: 'Models', icon: Layers3 },
+      { id: 'models', label: 'Model', icon: Layers3 },
+      { id: 'monitoring', label: 'Monitoring', icon: Activity },
+      { id: 'audit', label: 'Audit', icon: TerminalSquare },
     ],
   },
   {
-    label: 'Operations',
+    label: 'More',
     items: [
-      { id: 'monitoring', label: 'Monitoring', icon: Activity },
-      { id: 'audit', label: 'Audit Logs', icon: TerminalSquare },
+      { id: 'knowledge', label: 'Knowledge', icon: FileText },
+      { id: 'settings', label: 'Settings', icon: Settings },
     ],
   },
-  { label: 'Admin', items: [{ id: 'settings', label: 'Settings', icon: Settings }] },
 ];
 
 const PAGE_TITLES: Record<PageId, { eyebrow: string; title: string; subtitle: string }> = {
-  dashboard: {
-    eyebrow: 'Retail decision intelligence',
-    title: 'Good morning, Operator',
-    subtitle: 'Live demand signals, model health and decisions that need your attention.',
-  },
-  forecasts: {
-    eyebrow: 'Demand forecasting',
-    title: 'Forecast workspace',
-    subtitle: 'Run the validated 28-day LightGBM forecast against real RetailOps entities.',
-  },
-  analytics: {
-    eyebrow: 'BigQuery analytics',
-    title: 'Retail performance',
-    subtitle: 'Read-only, allowlisted analytics directly from the Gold and ML datasets.',
-  },
-  copilot: {
-    eyebrow: 'Agentic AI',
-    title: 'RetailOps Copilot',
-    subtitle: 'Grounded answers from Forecast API, BigQuery, model metadata and curated RAG.',
-  },
-  recommendations: {
-    eyebrow: 'Decision support',
-    title: 'Recommendations',
-    subtitle: 'Advisory actions generated from evidence. No operational system is mutated.',
-  },
-  approvals: {
-    eyebrow: 'Human in the loop',
-    title: 'Approval center',
-    subtitle: 'Approve or reject business follow-up while preserving the full evidence trail.',
-  },
-  knowledge: {
-    eyebrow: 'Grounded RAG',
-    title: 'Knowledge base',
-    subtitle: 'Curated model, data-contract and decision-policy context used by the agent.',
-  },
-  models: {
-    eyebrow: 'Model intelligence',
-    title: 'Model registry view',
-    subtitle: 'Inspect the active model, quality metrics and baseline comparison.',
-  },
-  monitoring: {
-    eyebrow: 'Production operations',
-    title: 'System monitoring',
-    subtitle: 'Readiness, durable state, release metadata and request responsiveness.',
-  },
-  audit: {
-    eyebrow: 'Traceability',
-    title: 'Audit logs',
-    subtitle: 'Operator-session activity with threads, tools and approval outcomes.',
-  },
-  settings: {
-    eyebrow: 'Workspace',
-    title: 'Settings',
-    subtitle: 'Single-role operator configuration for the current portfolio release.',
-  },
+  dashboard: { eyebrow: 'Workspace', title: 'Overview', subtitle: 'Demand, signals and decisions.' },
+  forecasts: { eyebrow: 'Forecasts', title: 'Demand outlook', subtitle: '28-day product-store forecast.' },
+  analytics: { eyebrow: 'Analytics', title: 'Performance', subtitle: 'Sales, stores and product mix.' },
+  copilot: { eyebrow: 'AI Copilot', title: 'Ask RetailOps', subtitle: 'Grounded decision support.' },
+  recommendations: { eyebrow: 'Decisions', title: 'Recommendations', subtitle: 'Evidence-backed follow-up.' },
+  approvals: { eyebrow: 'Governance', title: 'Approvals', subtitle: 'Human review queue.' },
+  knowledge: { eyebrow: 'AI', title: 'Knowledge', subtitle: 'Grounding sources.' },
+  models: { eyebrow: 'ML', title: 'Model', subtitle: 'Forecast quality and serving.' },
+  monitoring: { eyebrow: 'Operations', title: 'Monitoring', subtitle: 'Service health and latency.' },
+  audit: { eyebrow: 'Governance', title: 'Audit', subtitle: 'Traceable operator activity.' },
+  settings: { eyebrow: 'Workspace', title: 'Settings', subtitle: 'Runtime controls.' },
 };
 
 const currency = new Intl.NumberFormat('en-US', {
@@ -458,13 +414,15 @@ function App() {
       <main className="main-panel">
         <header className="topbar">
           <button className="menu-button" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu size={20} /></button>
-          <div className="search-shell">
-            <Search size={17} />
-            <span>Search products, stores or ask RetailOps AI…</span>
-            <kbd>⌘ K</kbd>
-          </div>
+          <button className="search-shell search-action" onClick={() => setActivePage('copilot')}>
+            <Search size={16} />
+            <span>Search or ask RetailOps AI</span>
+            <ArrowRight size={14} />
+          </button>
           <div className="topbar-actions">
-            <button className="icon-button" aria-label="Notifications"><Bell size={18} />{pendingCount > 0 && <span className="notification-dot" />}</button>
+            <button className="icon-button" aria-label="Open approvals" onClick={() => setActivePage('approvals')}>
+              <Bell size={17} />{pendingCount > 0 && <span className="notification-dot" />}
+            </button>
             <div className="topbar-divider" />
             <div className="topbar-user">
               <div className="operator-avatar small">OP</div>
@@ -541,109 +499,200 @@ function DashboardPage({
   onNavigate: (page: PageId) => void;
 }) {
   const sales = overview?.sales_summary.rows[0];
-  const topProducts = overview?.top_products.rows ?? [];
+  const reference = overview?.reference_sales_summary?.rows[0];
+  const daily = overview?.daily_trend.rows ?? [];
+  const categories = overview?.category_summary.rows ?? [];
   const stores = overview?.store_summary.rows ?? [];
-  const baselines = overview?.baseline_metrics.rows ?? [];
+  const context = overview?.demand_context.rows[0];
+  const weekday = overview?.weekday_profile.rows ?? [];
   const pending = approvals.filter((approval) => approval.status === 'pending');
-  const bestBaseline = [...baselines].sort((a, b) => safeNumber(a.mean_rmsse) - safeNumber(b.mean_rmsse))[0];
+
+  const totalUnits = safeNumber(sales?.total_units_sold);
+  const unitDelta = reference && safeNumber(reference.total_units_sold) > 0
+    ? (totalUnits - safeNumber(reference.total_units_sold)) / safeNumber(reference.total_units_sold)
+    : null;
+  const dailyValues = daily.map((row) => safeNumber(row.total_units_sold));
+  const dailyMean = dailyValues.length
+    ? dailyValues.reduce((sum, value) => sum + value, 0) / dailyValues.length
+    : 0;
+  const dailyStd = dailyValues.length > 1
+    ? Math.sqrt(dailyValues.reduce((sum, value) => sum + ((value - dailyMean) ** 2), 0) / (dailyValues.length - 1))
+    : 0;
+  const demandCv = dailyMean > 0 ? dailyStd / dailyMean : 0;
+  const topStore = stores[0];
+  const topCategory = categories[0];
 
   if (loading && !overview) {
-    return <div className="dashboard-grid"><Skeleton height={150} /><Skeleton height={150} /><Skeleton height={150} /><Skeleton height={150} /></div>;
+    return <div className="premium-loading"><Skeleton height={114} /><Skeleton height={360} /><Skeleton height={300} /></div>;
   }
 
   return (
-    <>
-      <div className="kpi-grid">
-        <KpiCard icon={PackageSearch} label="Units observed" value={compact.format(safeNumber(sales?.total_units_sold))} helper={`${sales?.observed_days ?? 0} days in current split`} badge="Live BigQuery" />
-        <KpiCard icon={Gauge} label="Estimated sales value" value={currency.format(safeNumber(sales?.estimated_sales_value))} helper={`Peak ${decimal.format(safeNumber(sales?.peak_daily_units))} units/day`} badge="Gold mart" />
-        <KpiCard icon={BrainCircuit} label="Active model" value={`${modelLabel(overview?.model)} ${modelVersion(overview?.model)}`} helper="Validated forecast service" badge="Production" />
-        <KpiCard icon={UserRoundCheck} label="Pending approvals" value={String(pending.length)} helper="Human review required" badge={pending.length ? 'Needs attention' : 'Clear'} />
+    <div className="premium-dashboard">
+      <div className="workspace-strip">
+        <div className="workspace-identity">
+          <span className="workspace-live"><i /> Live workspace</span>
+          <strong>Demo Retail Operations</strong>
+        </div>
+        <div className="workspace-meta">
+          <span><BrainCircuit size={13} /> {modelLabel(overview?.model)} {modelVersion(overview?.model)}</span>
+          <span><Clock3 size={13} /> 28-day horizon</span>
+          <span><ShieldCheck size={13} /> Human governed</span>
+        </div>
+        <button className="workspace-cta" onClick={() => onNavigate('copilot')}>
+          <Sparkles size={14} /> Ask Copilot
+        </button>
       </div>
 
-      <div className="content-grid two-thirds">
-        <Card className="chart-card">
+      <div className="premium-kpi-grid">
+        <div className="premium-kpi">
+          <div className="premium-kpi-head"><span>Demand</span><TrendingUp size={15} /></div>
+          <strong>{compact.format(totalUnits)}</strong>
+          <div className={`premium-kpi-delta ${unitDelta === null ? '' : unitDelta >= 0 ? 'up' : 'down'}`}>
+            {unitDelta === null ? `${sales?.observed_days ?? 0} observed days` : `${unitDelta >= 0 ? '+' : ''}${(unitDelta * 100).toFixed(1)}% vs validation`}
+          </div>
+        </div>
+        <div className="premium-kpi">
+          <div className="premium-kpi-head"><span>Sales value</span><Gauge size={15} /></div>
+          <strong>{currency.format(safeNumber(sales?.estimated_sales_value))}</strong>
+          <div className="premium-kpi-delta">{context ? `${(safeNumber(context.price_coverage_rate) * 100).toFixed(1)}% price coverage` : 'Gold mart estimate'}</div>
+        </div>
+        <div className="premium-kpi">
+          <div className="premium-kpi-head"><span>Demand variability</span><Activity size={15} /></div>
+          <strong>{(demandCv * 100).toFixed(1)}%</strong>
+          <div className="premium-kpi-delta">CV across daily total demand</div>
+        </div>
+        <div className="premium-kpi action">
+          <div className="premium-kpi-head"><span>Human review</span><UserRoundCheck size={15} /></div>
+          <strong>{pending.length}</strong>
+          <button onClick={() => onNavigate('approvals')}>{pending.length ? 'Review queue' : 'Queue clear'} <ArrowRight size={13} /></button>
+        </div>
+      </div>
+
+      <div className="premium-grid primary">
+        <Card className="premium-panel demand-panel">
           <SectionHeader
-            title="Top product demand"
-            subtitle="Units sold from the live Gold product mart"
-            action={<button className="text-button" onClick={() => onNavigate('analytics')}>Explore analytics <ArrowRight size={15} /></button>}
+            title="Demand pulse"
+            subtitle="Daily observed units"
+            action={<span className="panel-chip">{overview?.split === 'test' ? 'Test window' : 'Validation window'}</span>}
           />
-          <div className="chart-wrap">
-            {topProducts.length ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={topProducts.slice(0, 8)} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="4 8" vertical={false} stroke="var(--grid-line)" />
-                  <XAxis dataKey="item_id" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} interval={0} angle={-20} textAnchor="end" height={55} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
-                  <Tooltip contentStyle={{ background: '#0d1928', border: '1px solid #203348', borderRadius: 12 }} cursor={{ fill: 'rgba(70, 210, 185, .05)' }} />
-                  <Bar dataKey="total_units_sold" radius={[7, 7, 2, 2]} fill="var(--accent)" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : <EmptyState icon={BarChart3} title="No product data" text="Refresh the dashboard when BigQuery analytics are available." />}
-          </div>
-        </Card>
-
-        <Card className="decision-card">
-          <SectionHeader title="Decision queue" subtitle="Latest human-gated recommendations" />
-          <div className="decision-list">
-            {pending.length ? pending.slice(0, 4).map((approval) => (
-              <button className="decision-row" key={approval.threadId} onClick={() => onNavigate('approvals')}>
-                <div className="decision-icon"><AlertTriangle size={17} /></div>
-                <div className="decision-copy">
-                  <strong>{approval.request.proposal.action_type.replaceAll('_', ' ')}</strong>
-                  <span>{approval.request.proposal.entities.map((entity) => `${entity.item_id} · ${entity.store_id}`).join(', ') || 'Business review'}</span>
-                </div>
-                <StatusPill tone="warn">Approval</StatusPill>
-              </button>
-            )) : <EmptyState icon={ShieldCheck} title="Queue is clear" text="New agent recommendations requiring approval will appear here." />}
-          </div>
-          <button className="full-secondary" onClick={() => onNavigate('copilot')}><Sparkles size={16} /> Ask RetailOps AI</button>
-        </Card>
-      </div>
-
-      <div className="content-grid halves">
-        <Card className="chart-card">
-          <SectionHeader title="Store performance" subtitle="Estimated sales value by store" />
-          <div className="chart-wrap compact-chart">
-            {stores.length ? (
-              <ResponsiveContainer width="100%" height={235}>
-                <AreaChart data={stores.slice(0, 12)} margin={{ left: -10, right: 4, top: 10 }}>
+          <div className="premium-chart">
+            {daily.length ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={daily} margin={{ top: 10, right: 4, left: -22, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="salesArea" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--accent-2)" stopOpacity={0.45} />
-                      <stop offset="95%" stopColor="var(--accent-2)" stopOpacity={0} />
+                    <linearGradient id="premiumDemandArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stopColor="var(--accent)" stopOpacity={0.28} />
+                      <stop offset="1" stopColor="var(--accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="4 8" vertical={false} stroke="var(--grid-line)" />
-                  <XAxis dataKey="store_id" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} />
-                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 11 }} tickFormatter={(value) => compact.format(value)} />
-                  <Tooltip contentStyle={{ background: '#0d1928', border: '1px solid #203348', borderRadius: 12 }} formatter={(value) => currency.format(Number(value))} />
-                  <Area type="monotone" dataKey="estimated_sales_value" stroke="var(--accent-2)" fill="url(#salesArea)" strokeWidth={2.4} />
+                  <CartesianGrid strokeDasharray="3 7" vertical={false} stroke="var(--grid-line)" />
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} minTickGap={26} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} tickFormatter={(value) => String(value).slice(5)} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} tickFormatter={(value) => compact.format(Number(value))} />
+                  <Tooltip contentStyle={{ background: '#11151b', border: '1px solid #2a3038', borderRadius: 10 }} formatter={(value) => [compact.format(Number(value)), 'Units']} />
+                  <Area type="monotone" dataKey="total_units_sold" stroke="var(--accent)" fill="url(#premiumDemandArea)" strokeWidth={2.2} dot={false} activeDot={{ r: 4 }} />
                 </AreaChart>
               </ResponsiveContainer>
-            ) : <EmptyState icon={Store} title="No store data" text="Store analytics will render here when available." />}
+            ) : <EmptyState icon={TrendingUp} title="No trend data" text="Refresh the workspace." />}
           </div>
         </Card>
 
-        <Card className="model-health-card">
-          <SectionHeader title="Model health" subtitle="Active serving contract and baseline context" />
-          <div className="model-hero">
-            <div className="model-icon"><BrainCircuit size={24} /></div>
-            <div>
-              <div className="model-name">{modelLabel(overview?.model)}</div>
-              <div className="model-version">Version {modelVersion(overview?.model)}</div>
+        <Card className="premium-panel attention-panel">
+          <div className="attention-head">
+            <div><span>Attention</span><strong>{pending.length ? `${pending.length} decision${pending.length > 1 ? 's' : ''} waiting` : 'No blocked decisions'}</strong></div>
+            <div className={`attention-orb ${pending.length ? 'warn' : 'good'}`}><ShieldCheck size={17} /></div>
+          </div>
+
+          <div className="signal-stack">
+            <div className="signal-row">
+              <span>Top category</span>
+              <strong>{topCategory?.category ?? '—'}</strong>
+              <small>{topCategory ? compact.format(topCategory.total_units_sold) : '—'} units</small>
             </div>
-            <StatusPill tone="good"><CheckCircle2 size={13} /> Healthy</StatusPill>
+            <div className="signal-row">
+              <span>Top store</span>
+              <strong>{topStore?.store_id ?? '—'}</strong>
+              <small>{topStore ? `${topStore.state} · ${compact.format(topStore.total_units_sold)} units` : '—'}</small>
+            </div>
+            <div className="signal-row">
+              <span>Peak day</span>
+              <strong>{compact.format(safeNumber(sales?.peak_daily_units))}</strong>
+              <small>units</small>
+            </div>
           </div>
-          <div className="metric-pairs">
-            <div><span>Best baseline RMSSE</span><strong>{bestBaseline ? decimal.format(bestBaseline.mean_rmsse) : '—'}</strong></div>
-            <div><span>Forecast horizon</span><strong>28 days</strong></div>
-            <div><span>Serving mode</span><strong>Private API</strong></div>
-            <div><span>Decision mode</span><strong>Read-only</strong></div>
+
+          <div className="attention-actions">
+            <button onClick={() => onNavigate('forecasts')}><TrendingUp size={14} /> Forecast</button>
+            <button onClick={() => onNavigate('analytics')}><BarChart3 size={14} /> Analyze</button>
+            <button className="primary" onClick={() => onNavigate('copilot')}><Sparkles size={14} /> Ask AI</button>
           </div>
-          <div className="trust-strip"><ShieldCheck size={16} /><span>Forecasts are evidence, not automatic order quantities.</span></div>
         </Card>
       </div>
-    </>
+
+      <div className="context-grid">
+        <div className="context-stat"><span>Weekend demand</span><strong>{context ? `${(safeNumber(context.weekend_unit_share) * 100).toFixed(1)}%` : '—'}</strong></div>
+        <div className="context-stat"><span>SNAP-active demand</span><strong>{context ? `${(safeNumber(context.snap_active_unit_share) * 100).toFixed(1)}%` : '—'}</strong></div>
+        <div className="context-stat"><span>Event-day demand</span><strong>{context ? `${(safeNumber(context.event_unit_share) * 100).toFixed(1)}%` : '—'}</strong></div>
+        <div className="context-stat"><span>Average sell price</span><strong>{context ? currency.format(safeNumber(context.average_sell_price)) : '—'}</strong></div>
+      </div>
+
+      <div className="premium-grid secondary">
+        <Card className="premium-panel">
+          <SectionHeader title="Category mix" subtitle="Observed units by category" />
+          <div className="premium-chart compact">
+            {categories.length ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={categories} layout="vertical" margin={{ left: 8, right: 14, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 7" horizontal={false} stroke="var(--grid-line)" />
+                  <XAxis type="number" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} tickFormatter={(value) => compact.format(Number(value))} />
+                  <YAxis dataKey="category" type="category" width={74} tickLine={false} axisLine={false} tick={{ fill: 'var(--text-soft)', fontSize: 9 }} />
+                  <Tooltip contentStyle={{ background: '#11151b', border: '1px solid #2a3038', borderRadius: 10 }} formatter={(value) => [compact.format(Number(value)), 'Units']} />
+                  <Bar dataKey="total_units_sold" fill="var(--accent-2)" radius={[0, 5, 5, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyState icon={BarChart3} title="No category data" text="Refresh the workspace." />}
+          </div>
+        </Card>
+
+        <Card className="premium-panel">
+          <SectionHeader title="Weekly rhythm" subtitle="Average demand by weekday" />
+          <div className="premium-chart compact">
+            {weekday.length ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={weekday} margin={{ left: -16, right: 4, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 7" vertical={false} stroke="var(--grid-line)" />
+                  <XAxis dataKey="weekday" tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--text-muted)', fontSize: 9 }} tickFormatter={(value) => compact.format(Number(value))} />
+                  <Tooltip contentStyle={{ background: '#11151b', border: '1px solid #2a3038', borderRadius: 10 }} formatter={(value) => [compact.format(Number(value)), 'Avg units']} />
+                  <Bar dataKey="average_daily_units" fill="var(--accent)" radius={[5, 5, 1, 1]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : <EmptyState icon={Activity} title="No weekday data" text="Refresh the workspace." />}
+          </div>
+        </Card>
+      </div>
+
+      <Card className="premium-panel store-table-panel">
+        <div className="table-panel-head">
+          <div><strong>Store performance</strong><span>Top stores by observed demand</span></div>
+          <button onClick={() => onNavigate('analytics')}>Full analytics <ArrowRight size={13} /></button>
+        </div>
+        <div className="premium-store-list">
+          {stores.slice(0, 6).map((store, index) => {
+            const share = totalUnits > 0 ? safeNumber(store.total_units_sold) / totalUnits : 0;
+            return (
+              <div className="premium-store-row" key={store.store_id}>
+                <span className="store-rank">{String(index + 1).padStart(2, '0')}</span>
+                <div className="store-identity"><strong>{store.store_id}</strong><span>{store.state}</span></div>
+                <div className="store-metric"><span>Units</span><strong>{compact.format(store.total_units_sold)}</strong></div>
+                <div className="store-metric"><span>Sales value</span><strong>{currency.format(store.estimated_sales_value)}</strong></div>
+                <div className="store-share"><span style={{ width: `${Math.min(100, share * 100)}%` }} /></div>
+                <small>{(share * 100).toFixed(1)}%</small>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+    </div>
   );
 }
 

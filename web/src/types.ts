@@ -51,6 +51,7 @@ export type Overview = {
   }>;
   store_summary: AnalyticsResult<{
     store_id: string;
+    state: string;
     start_date: string;
     end_date: string;
     total_units_sold: number;
@@ -70,6 +71,42 @@ export type Overview = {
     rmse: number;
     mean_rmsse: number;
   }>;
+  daily_trend: AnalyticsResult<{
+    date: string;
+    total_units_sold: number;
+    estimated_sales_value: number;
+    active_series: number;
+  }>;
+  category_summary: AnalyticsResult<{
+    category: string;
+    total_units_sold: number;
+    estimated_sales_value: number;
+    item_count: number;
+    store_count: number;
+  }>;
+  demand_context: AnalyticsResult<{
+    observed_days: number;
+    weekend_unit_share: number;
+    snap_active_unit_share: number;
+    event_unit_share: number;
+    price_coverage_rate: number;
+    average_sell_price: number;
+  }>;
+  weekday_profile: AnalyticsResult<{
+    day_order: number;
+    weekday: string;
+    average_daily_units: number;
+    total_units_sold: number;
+  }>;
+  reference_sales_summary?: AnalyticsResult<{
+    start_date: string | null;
+    end_date: string | null;
+    observed_days: number;
+    total_units_sold: number;
+    average_daily_units: number;
+    peak_daily_units: number;
+    estimated_sales_value: number;
+  }> | null;
   model: Record<string, unknown>;
 };
 
@@ -297,4 +334,52 @@ export type SessionAuditEvent = {
   status: string;
   threadId?: string;
   tools?: string[];
+};
+
+
+export type SavedScenario = {
+  id: string;
+  owner?: string;
+  name: string;
+  item_id: string;
+  store_id: string;
+  split: Split;
+  current_stock: number;
+  incoming_units: number;
+  lead_time_days: number;
+  safety_stock: number;
+  economics?: Record<string, number> | null;
+  latest_risk?: 'low' | 'medium' | 'high' | null;
+  latest_end_inventory?: number | null;
+  latest_stockout_day?: number | null;
+  last_run_at?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DecisionHistoryEvent = {
+  id: string;
+  scenario_id?: string | null;
+  scenario_name?: string | null;
+  item_id: string;
+  store_id: string;
+  risk_level?: 'low' | 'medium' | 'high' | null;
+  projected_end_inventory?: number | null;
+  review_quantity?: number | null;
+  stockout_day?: number | null;
+  recommended_action?: string | null;
+  created_at: string;
+};
+
+export type BatchScenarioResult = {
+  name: string;
+  item_id: string;
+  store_id: string;
+  risk_level: 'low' | 'medium' | 'high';
+  forecast_total: number;
+  projected_end_inventory: number;
+  stockout_day: number | null;
+  safety_breach_day: number | null;
+  review_quantity: number;
+  recommended_action: string;
 };

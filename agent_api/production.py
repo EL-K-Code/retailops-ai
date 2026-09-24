@@ -42,6 +42,27 @@ class InventoryScenarioRequest(BaseModel):
     economics: ReorderEconomicsRequest | None = None
 
 
+class SavedScenarioRequest(BaseModel):
+    id: str | None = Field(default=None, max_length=128)
+    name: str = Field(min_length=1, max_length=160)
+    item_id: str = Field(min_length=1, max_length=128)
+    store_id: str = Field(min_length=1, max_length=128)
+    split: Literal["validation", "test"] = "test"
+    current_stock: float = Field(ge=0)
+    incoming_units: float = Field(default=0, ge=0)
+    lead_time_days: int = Field(default=0, ge=0, le=28)
+    safety_stock: float = Field(default=0, ge=0)
+    economics: ReorderEconomicsRequest | None = None
+
+
+class BatchScenarioItem(InventoryScenarioRequest):
+    name: str | None = Field(default=None, max_length=160)
+
+
+class BatchScenarioRequest(BaseModel):
+    scenarios: list[BatchScenarioItem] = Field(min_length=1, max_length=25)
+
+
 class ExplainConsoleRequest(BaseModel):
     item_id: str = Field(min_length=1, max_length=128)
     store_id: str = Field(min_length=1, max_length=128)
@@ -58,6 +79,13 @@ def _runtime(request: Request) -> ProductionAgentRuntime:
 
 def _request_id(request: Request) -> str:
     return request.headers.get("x-request-id") or str(uuid4())
+
+
+def _actor(request: Request) -> str:
+    identity = request.headers.get("x-goog-authenticated-user-email")
+    if not identity:
+        return "local-operator"
+    return identity.split(":", 1)[-1].strip().lower()
 
 
 def _forecast_request(item_id: str, store_id: str, split: str) -> ForecastToolRequest:
@@ -88,22 +116,7 @@ def console_overview(
     runtime = _runtime(request)
     request_id = _request_id(request)
     try:
-        return {
-            "split": split,
-            "sales_summary": runtime.analytics(
-                AnalyticsRequest(operation="sales_summary", split=split)
-            ),
-            "store_summary": runtime.analytics(
-                AnalyticsRequest(operation="store_summary", split=split)
-            ),
-            "top_products": runtime.analytics(
-                AnalyticsRequest(operation="top_products", split=split, top_n=8)
-            ),
-            "baseline_metrics": runtime.analytics(
-                AnalyticsRequest(operation="baseline_metrics", split=split)
-            ),
-            "model": runtime.model_info(request_id=request_id),
-        }
+        return runtime.dashboard_overview(split=split, request_id=request_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Console overview failed: {exc}") from exc
 
@@ -192,6 +205,81 @@ def console_drift(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Drift diagnostic failed: {exc}") from exc
+
+
+@app.get("/v1/console/scenarios")
+def console_scenarios(request: Request) -> dict[str, Any]:
+    runtime = _runtime(request)
+    return {
+        "storage_backend": runtime.scenario_store.backend,
+        "scenarios": runtime.saved_scenarios(_actor(request)),
+    }
+
+
+@app.post("/v1/console/scenarios")
+def console_save_scenario(
+    payload: SavedScenarioRequest,
+    request: Request,
+) -> dict[str, Any]:
+    saved = _runtime(request).save_scenario(
+        _actor(request),
+        payload.model_dump(mode="json"),
+    )
+    return {"scenario": saved}
+
+
+@app.delete("/v1/console/scenarios/{scenario_id}")
+def console_delete_scenario(scenario_id: str, request: Request) -> dict[str, Any]:
+    deleted = _runtime(request).delete_scenario(_actor(request), scenario_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Scenario not found")
+    return {"deleted": True, "id": scenario_id}
+
+
+@app.post("/v1/console/scenarios/{scenario_id}/run")
+def console_run_saved_scenario(scenario_id: str, request: Request) -> dict[str, Any]:
+    try:
+        return _runtime(request).run_saved_scenario(
+            owner=_actor(request),
+            scenario_id=scenario_id,
+            request_id=_request_id(request),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Scenario not found") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Scenario run failed: {exc}") from exc
+
+
+@app.get("/v1/console/decision-history")
+def console_decision_history(request: Request, limit: int = 30) -> dict[str, Any]:
+    bounded_limit = max(1, min(limit, 100))
+    return {"events": _runtime(request).decision_history(_actor(request), limit=bounded_limit)}
+
+
+@app.post("/v1/console/batch-scenarios")
+def console_batch_scenarios(
+    payload: BatchScenarioRequest,
+    request: Request,
+) -> dict[str, Any]:
+    rows = [
+        item.model_dump(mode="json")
+        for item in payload.scenarios
+    ]
+    try:
+        results = _runtime(request).batch_inventory_scenarios(
+            rows,
+            request_id=_request_id(request),
+        )
+        return {"count": len(results), "results": results}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Batch scenario evaluation failed: {exc}",
+        ) from exc
 
 
 @app.get("/v1/console/model")

@@ -57,6 +57,10 @@ class AnalyticsRequest(StrictModel):
         "baseline_metrics",
         "demand_anomalies",
         "daily_demand",
+        "daily_trend",
+        "category_summary",
+        "demand_context",
+        "weekday_profile",
     ]
     split: Literal["validation", "test"] = "test"
     item_id: str | None = Field(default=None, max_length=128)
