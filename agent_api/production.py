@@ -276,7 +276,10 @@ def console_batch_scenarios(
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Batch scenario evaluation failed: {exc}") from exc
+        raise HTTPException(
+            status_code=502,
+            detail=f"Batch scenario evaluation failed: {exc}",
+        ) from exc
 
 
 @app.get("/v1/console/model")
