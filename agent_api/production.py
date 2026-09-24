@@ -88,22 +88,7 @@ def console_overview(
     runtime = _runtime(request)
     request_id = _request_id(request)
     try:
-        return {
-            "split": split,
-            "sales_summary": runtime.analytics(
-                AnalyticsRequest(operation="sales_summary", split=split)
-            ),
-            "store_summary": runtime.analytics(
-                AnalyticsRequest(operation="store_summary", split=split)
-            ),
-            "top_products": runtime.analytics(
-                AnalyticsRequest(operation="top_products", split=split, top_n=8)
-            ),
-            "baseline_metrics": runtime.analytics(
-                AnalyticsRequest(operation="baseline_metrics", split=split)
-            ),
-            "model": runtime.model_info(request_id=request_id),
-        }
+        return runtime.dashboard_overview(split=split, request_id=request_id)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Console overview failed: {exc}") from exc
 
