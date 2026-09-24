@@ -149,26 +149,44 @@ jobs:
             --region="${REGION}" \
             --format='table(status.latestReadyRevisionName,status.traffic[0].percent,status.url)'
 
-      - name: Smoke test private forecast service
+      - name: Resolve forecast service URL
+        id: forecast-url
         shell: bash
         run: |
           set -euo pipefail
-
           FORECAST_URL="$(gcloud run services describe "${FORECAST_SERVICE}" \
             --project="${PROJECT_ID}" \
             --region="${REGION}" \
             --format='value(status.url)')"
+          echo "url=${FORECAST_URL}" >> "${GITHUB_OUTPUT}"
 
-          TOKEN="$(gcloud auth print-identity-token --audiences="${FORECAST_URL}")"
+      - name: Mint Cloud Run ID token for smoke test
+        id: smoke-auth
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+          token_format: id_token
+          id_token_audience: ${{ steps.forecast-url.outputs.url }}
+          id_token_include_email: true
+
+      - name: Smoke test private forecast service
+        shell: bash
+        env:
+          FORECAST_URL: ${{ steps.forecast-url.outputs.url }}
+          FORECAST_ID_TOKEN: ${{ steps.smoke-auth.outputs.id_token }}
+        run: |
+          set -euo pipefail
 
           curl --fail --silent --show-error \
             --retry 4 --retry-all-errors --retry-delay 3 \
-            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Authorization: Bearer ${FORECAST_ID_TOKEN}" \
             "${FORECAST_URL}/readyz"
 
           curl --fail --silent --show-error \
             --retry 3 --retry-all-errors --retry-delay 2 \
-            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Authorization: Bearer ${FORECAST_ID_TOKEN}" \
             -H "Content-Type: application/json" \
             -H "x-request-id: cd-smoke-${{ steps.revision.outputs.sha }}" \
             -X POST \
