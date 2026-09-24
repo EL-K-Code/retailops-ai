@@ -793,6 +793,7 @@ function CopilotPage({
 }) {
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
+  const [threadId, setThreadId] = useState<string | undefined>(undefined);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -804,8 +805,8 @@ function CopilotPage({
 
   const quickPrompts = [
     'Forecast FOODS_1_001 in CA_1 and explain the result.',
-    'Summarize sales for FOODS_1_001 in CA_1 during the test split.',
-    'Which business information is missing before using a forecast as an order quantity?',
+    'For FOODS_1_001 in CA_1, I have 20 units and 10 units arrive in 3 days. Use a safety stock of 6 and assess the next 5 days.',
+    'Using the same scenario, what changes if that delivery is delayed by 5 days?',
   ];
 
   const send = async (prompt = question) => {
@@ -815,7 +816,8 @@ function CopilotPage({
     setQuestion('');
     setLoading(true);
     try {
-      const result = await api.agentQuery(trimmed);
+      const result = await api.agentQuery(trimmed, threadId);
+      setThreadId(result.thread_id);
       rememberApproval(result);
       const approval = result.status === 'approval_required';
       const text = approval
@@ -887,7 +889,7 @@ function CopilotPage({
           <div className="icon-chip"><ShieldCheck size={18} /></div>
           <h3>Trust boundary</h3>
           <p>The agent can analyze and recommend. It cannot place orders, change inventory, modify prices or execute arbitrary SQL.</p>
-          <div className="trust-tags"><span>Read-only tools</span><span>HITL gates</span><span>Evidence sources</span></div>
+          <div className="trust-tags"><span>Read-only tools</span><span>Scenario memory</span><span>HITL gates</span><span>Evidence sources</span></div>
         </Card>
       </div>
     </div>

@@ -4,6 +4,7 @@ export type ToolTrace = {
   tool: string;
   status: string;
   signature?: string;
+  latency_ms?: number;
 };
 
 export type AgentRunResult = {
@@ -13,6 +14,7 @@ export type AgentRunResult = {
   approval_request: ApprovalRequest | null;
   evidence_sources: string[];
   tool_trace: ToolTrace[];
+  active_scenario?: Record<string, unknown> | null;
 };
 
 export type ApprovalRequest = {
@@ -105,6 +107,60 @@ export type InventoryTrajectoryPoint = {
   safety_stock: number;
 };
 
+export type CounterfactualOption = {
+  kind: string;
+  label: string;
+  change: Record<string, number>;
+  scenario: {
+    current_stock: number;
+    incoming_units: number;
+    lead_time_days: number;
+    safety_stock: number;
+  };
+  result: {
+    risk_level: 'low' | 'medium' | 'high';
+    projected_end_inventory: number;
+    stockout_day: number | null;
+    safety_breach_day: number | null;
+  };
+};
+
+export type ForecastUncertainty = {
+  method: string;
+  lower_quantile: number;
+  upper_quantile: number;
+  points: Array<{
+    date: string | null;
+    horizon: number;
+    prediction: number;
+    lower: number;
+    upper: number;
+  }>;
+  total_prediction: number;
+  total_lower: number;
+  total_upper: number;
+  notice: string;
+};
+
+export type ReorderOptimization = {
+  economics: Record<string, number>;
+  recommended_additional_units: number;
+  best_candidate: {
+    additional_units: number;
+    total_scenario_cost: number;
+    order_cost: number;
+    holding_cost: number;
+    stockout_penalty: number;
+    safety_breach_penalty: number;
+    risk_level: 'low' | 'medium' | 'high';
+    projected_end_inventory: number;
+    stockout_day: number | null;
+    safety_breach_day: number | null;
+  };
+  candidates_evaluated: number;
+  notice: string;
+};
+
 export type InventoryScenarioResponse = {
   request_id: string;
   split: Split;
@@ -136,6 +192,23 @@ export type InventoryScenarioResponse = {
   recommended_action: 'monitor' | 'review_reorder' | 'review_safety_stock';
   recommendation: string;
   trajectory: InventoryTrajectoryPoint[];
+  counterfactuals: {
+    baseline_risk: 'low' | 'medium' | 'high';
+    decision_horizon_days: number;
+    minimum_immediate_units: number | null;
+    minimum_po_increase: number | null;
+    latest_safe_arrival_day: number | null;
+    options: CounterfactualOption[];
+    notice: string;
+  };
+  uncertainty: ForecastUncertainty;
+  upper_demand_stress: {
+    risk_level: 'low' | 'medium' | 'high';
+    projected_end_inventory: number;
+    stockout_day: number | null;
+    safety_breach_day: number | null;
+  };
+  reorder_optimization?: ReorderOptimization;
 };
 
 export type FeatureAttribution = {
@@ -162,6 +235,42 @@ export type ForecastExplanationResponse = {
     store_id: string;
     features: FeatureAttribution[];
   }>;
+};
+
+export type DriftReport = {
+  metric: string;
+  psi: number;
+  mean_shift_std: number;
+  status: 'stable' | 'watch' | 'shifted';
+  reference_observations: number;
+  current_observations: number;
+  reference_mean: number;
+  current_mean: number;
+  notice: string;
+};
+
+export type MorningBrief = {
+  generated_at: string;
+  split: Split;
+  priorities: Array<{
+    severity: 'watch' | 'high' | 'critical';
+    type: 'demand_spike' | 'demand_drop';
+    item_id: string;
+    store_id: string;
+    date: string;
+    units_sold: number;
+    rolling_mean_28: number;
+    anomaly_z: number;
+  }>;
+  top_products: AnalyticsResult<{
+    item_id: string;
+    total_units_sold: number;
+    estimated_sales_value: number;
+    average_price_coverage_rate: number;
+  }>;
+  demand_drift: DriftReport;
+  model: Record<string, unknown>;
+  limitations: string[];
 };
 
 export type OpsStatus = {

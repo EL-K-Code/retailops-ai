@@ -23,6 +23,18 @@ class ForecastToolRequest(StrictModel):
     split: Literal["validation", "test"] = "test"
 
 
+class ReorderEconomicsInput(StrictModel):
+    """Explicit scenario economics. These values are never inferred from M5."""
+
+    unit_order_cost: float = Field(ge=0)
+    holding_cost_per_unit: float = Field(ge=0)
+    stockout_penalty_per_unit: float = Field(ge=0)
+    safety_breach_penalty_per_unit: float = Field(default=0, ge=0)
+    min_order_quantity: int = Field(default=0, ge=0)
+    order_increment: int = Field(default=1, ge=1)
+    max_additional_units: int = Field(default=100, ge=0, le=10_000)
+
+
 class InventoryDecisionRequest(StrictModel):
     """Explicit user-provided inventory scenario for grounded decision support."""
 
@@ -34,6 +46,7 @@ class InventoryDecisionRequest(StrictModel):
     safety_stock: float = Field(default=0, ge=0)
     horizon_days: int = Field(default=28, ge=1, le=28)
     include_counterfactuals: bool = True
+    economics: ReorderEconomicsInput | None = None
 
 
 class AnalyticsRequest(StrictModel):
@@ -42,6 +55,8 @@ class AnalyticsRequest(StrictModel):
         "store_summary",
         "top_products",
         "baseline_metrics",
+        "demand_anomalies",
+        "daily_demand",
     ]
     split: Literal["validation", "test"] = "test"
     item_id: str | None = Field(default=None, max_length=128)
@@ -58,11 +73,7 @@ class AgentPlan(StrictModel):
     analytics: list[AnalyticsRequest] = Field(default_factory=list, max_length=3)
     need_model_info: bool = False
     knowledge_query: str | None = Field(default=None, max_length=500)
-    note: str = Field(
-        default="",
-        max_length=500,
-        description="Short operational justification, not hidden reasoning.",
-    )
+    note: str = Field(default="", max_length=500)
 
 
 class ActionProposal(StrictModel):
@@ -96,3 +107,4 @@ class AgentRunResult(StrictModel):
     approval_request: dict[str, Any] | None = None
     evidence_sources: list[str] = Field(default_factory=list)
     tool_trace: list[dict[str, Any]] = Field(default_factory=list)
+    active_scenario: dict[str, Any] | None = None

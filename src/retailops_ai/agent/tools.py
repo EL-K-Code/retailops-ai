@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -19,6 +20,8 @@ from retailops_ai.decision.inventory import (
     recommend_inventory_counterfactuals,
     simulate_inventory,
 )
+from retailops_ai.decision.reorder import ReorderEconomics, optimize_reorder_scenario
+from retailops_ai.decision.uncertainty import band_as_forecast_points, poisson_predictive_band
 
 
 class ForecastToolClient(Protocol):
@@ -113,8 +116,28 @@ def _run_inventory_decision(
         "forecast_points": points,
         **simulation,
     }
+    uncertainty = poisson_predictive_band(points)
+    upper_stress = simulate_inventory(
+        band_as_forecast_points(uncertainty, level="upper"),
+        scenario,
+    )
+    result["uncertainty"] = uncertainty
+    result["upper_demand_stress"] = {
+        "risk_level": upper_stress["risk_level"],
+        "projected_end_inventory": upper_stress["projected_end_inventory"],
+        "stockout_day": upper_stress["stockout_day"],
+        "safety_breach_day": upper_stress["safety_breach_day"],
+    }
     if request.include_counterfactuals:
         result["counterfactuals"] = recommend_inventory_counterfactuals(points, scenario)
+    if request.economics is not None:
+        economics_payload = request.economics.model_dump(mode="json")
+        result["economics"] = economics_payload
+        result["reorder_optimization"] = optimize_reorder_scenario(
+            points,
+            scenario,
+            ReorderEconomics(**economics_payload),
+        )
     return result
 
 
@@ -146,9 +169,15 @@ class AgentToolbox:
         def run_once(tool: str, payload: Any, callback: Any) -> None:
             signature = _signature(tool, payload)
             if signature in signatures:
-                trace.append({"tool": tool, "status": "skipped_duplicate", "signature": signature})
+                trace.append({
+                    "tool": tool,
+                    "status": "skipped_duplicate",
+                    "signature": signature,
+                    "latency_ms": 0.0,
+                })
                 return
             signatures.append(signature)
+            started = time.perf_counter()
             try:
                 result = callback()
                 evidence.append(
@@ -158,7 +187,12 @@ class AgentToolbox:
                         "data": _jsonable(result),
                     }
                 )
-                trace.append({"tool": tool, "status": "ok", "signature": signature})
+                trace.append({
+                    "tool": tool,
+                    "status": "ok",
+                    "signature": signature,
+                    "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+                })
             except Exception as exc:  # deterministic failure is evidence, not fabricated data
                 evidence.append(
                     {
@@ -167,7 +201,12 @@ class AgentToolbox:
                         "data": {"message": str(exc)},
                     }
                 )
-                trace.append({"tool": tool, "status": "error", "signature": signature})
+                trace.append({
+                    "tool": tool,
+                    "status": "error",
+                    "signature": signature,
+                    "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+                })
 
         if plan.inventory_decision is not None:
             inventory_request = plan.inventory_decision

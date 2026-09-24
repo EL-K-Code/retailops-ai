@@ -107,6 +107,9 @@ def create_app(runtime_factory: RuntimeFactory = build_agent_runtime) -> FastAPI
                 "forecast_api",
                 "inventory_decision",
                 "inventory_counterfactuals",
+                "scenario_memory",
+                "cost_aware_reorder_scenarios",
+                "demand_anomalies",
                 "bigquery_analytics",
                 "model_info",
                 "knowledge_rag",
@@ -114,6 +117,8 @@ def create_app(runtime_factory: RuntimeFactory = build_agent_runtime) -> FastAPI
             "analytics_sql": "allowlisted templates only",
             "inventory_mode": "explicit user-provided scenario inputs",
             "counterfactual_mode": "deterministic scenario comparison",
+            "scenario_memory": "thread-scoped state",
+            "uncertainty_mode": "Poisson model-assumption stress band",
             "human_in_the_loop": True,
             "mutating_actions": False,
         }

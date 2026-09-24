@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -41,16 +42,59 @@ def _plan_has_tools(plan: AgentPlan) -> bool:
     )
 
 
+def _llm_context(state: AgentState) -> dict[str, Any]:
+    context = dict(state.get("user_context", {}))
+    if state.get("active_scenario"):
+        context["active_scenario"] = state["active_scenario"]
+    return context
+
+
+def _active_scenario(
+    evidence: list[dict[str, Any]],
+    previous: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    active = previous
+    for item in evidence:
+        if item.get("source") != "inventory_decision":
+            continue
+        data = item.get("data")
+        if not isinstance(data, dict):
+            continue
+        entity = data.get("entity") or {}
+        scenario = data.get("scenario") or {}
+        active = {
+            "item_id": entity.get("item_id"),
+            "store_id": entity.get("store_id"),
+            "split": data.get("split", "test"),
+            "horizon_days": data.get("decision_horizon_days", 28),
+            **scenario,
+        }
+        if data.get("economics"):
+            active["economics"] = data["economics"]
+    return active
+
+
 def build_agent_graph(deps: AgentGraphDependencies, *, checkpointer: Any) -> Any:
     def plan_node(state: AgentState) -> dict[str, Any]:
+        started = time.perf_counter()
         plan = deps.llm.plan(
             question=state["question"],
             evidence=state.get("evidence", []),
-            user_context=state.get("user_context", {}),
+            user_context=_llm_context(state),
             step_count=state.get("step_count", 0),
             max_steps=deps.max_tool_steps,
         )
-        return {"plan": plan.model_dump(mode="json")}
+        return {
+            "plan": plan.model_dump(mode="json"),
+            "tool_trace": [
+                *state.get("tool_trace", []),
+                {
+                    "tool": "gemini_planner",
+                    "status": "ok",
+                    "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+                },
+            ],
+        }
 
     def route_after_plan(state: AgentState) -> str:
         plan = AgentPlan.model_validate(state["plan"])
@@ -72,17 +116,30 @@ def build_agent_graph(deps: AgentGraphDependencies, *, checkpointer: Any) -> Any
             "tool_trace": [*state.get("tool_trace", []), *batch.trace],
             "executed_signatures": batch.signatures,
             "step_count": state.get("step_count", 0) + 1,
+            "active_scenario": _active_scenario(
+                batch.evidence,
+                state.get("active_scenario"),
+            ),
         }
 
     def synthesize_node(state: AgentState) -> dict[str, Any]:
+        started = time.perf_counter()
         draft = deps.llm.synthesize(
             question=state["question"],
             evidence=state.get("evidence", []),
-            user_context=state.get("user_context", {}),
+            user_context=_llm_context(state),
         )
         return {
             "draft": draft.model_dump(mode="json"),
             "approval_required": draft.proposed_action is not None,
+            "tool_trace": [
+                *state.get("tool_trace", []),
+                {
+                    "tool": "gemini_synthesis",
+                    "status": "ok",
+                    "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+                },
+            ],
         }
 
     def route_after_synthesis(state: AgentState) -> str:
@@ -93,7 +150,6 @@ def build_agent_graph(deps: AgentGraphDependencies, *, checkpointer: Any) -> Any
         proposal = draft.proposed_action
         if proposal is None:
             return {"approval": {"approved": True, "reviewer_note": None}}
-
         decision = interrupt(
             {
                 "type": "business_action_approval",
@@ -107,15 +163,15 @@ def build_agent_graph(deps: AgentGraphDependencies, *, checkpointer: Any) -> Any
                 ),
             }
         )
-        validated = ApprovalDecision.model_validate(decision)
-        return {"approval": validated.model_dump(mode="json")}
+        return {
+            "approval": ApprovalDecision.model_validate(decision).model_dump(mode="json")
+        }
 
     def finalize_node(state: AgentState) -> dict[str, Any]:
         draft = AgentDraft.model_validate(state["draft"])
         answer = draft.answer
         if draft.limitations:
             answer += "\n\nLimitations: " + "; ".join(draft.limitations)
-
         if draft.proposed_action is not None:
             approval = ApprovalDecision.model_validate(state["approval"])
             if approval.approved:
@@ -130,7 +186,6 @@ def build_agent_graph(deps: AgentGraphDependencies, *, checkpointer: Any) -> Any
                 )
             if approval.reviewer_note:
                 answer += f" Reviewer note: {approval.reviewer_note}"
-
         return {"final_answer": answer, "status": "completed"}
 
     builder = StateGraph(AgentState)

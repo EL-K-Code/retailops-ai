@@ -103,6 +103,7 @@ class AgentRuntime:
                 approval_request=payload,
                 evidence_sources=evidence_sources,
                 tool_trace=tool_trace,
+                active_scenario=result.get("active_scenario"),
             )
         return AgentRunResult(
             status="completed",
@@ -110,6 +111,7 @@ class AgentRuntime:
             answer=result.get("final_answer"),
             evidence_sources=evidence_sources,
             tool_trace=tool_trace,
+            active_scenario=result.get("active_scenario"),
         )
 
     def ask(
@@ -129,6 +131,11 @@ class AgentRuntime:
             "executed_signatures": [],
             "tool_trace": [],
         }
+        if thread_id:
+            snapshot = self.graph.get_state(self._config(resolved_thread_id))
+            values = getattr(snapshot, "values", {}) or {}
+            if values.get("active_scenario"):
+                initial_state["active_scenario"] = values["active_scenario"]
         result = self.graph.invoke(initial_state, config=self._config(resolved_thread_id))
         return self._format_result(resolved_thread_id, result)
 

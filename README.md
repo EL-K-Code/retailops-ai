@@ -1,14 +1,19 @@
 # RetailOps AI
 
-**End-to-End Data, ML & Agentic AI Platform**
+**End-to-End Data, ML, Decision Intelligence & Agentic AI Platform**
 
-RetailOps AI is a portfolio project that progressively builds a production-like Data & AI platform
-for retail, e-commerce, and supply-chain decision support. Each layer is implemented, tested, and
-validated before its technology is claimed as part of the executed stack.
+RetailOps AI is a production-oriented portfolio platform that turns retail data into governed
+operational decisions. It combines leakage-safe demand forecasting, explainability, deterministic
+inventory scenarios, grounded generative AI, human approval, cloud deployment and an operator
+console.
 
-## Target architecture
+> **Core design rule:** forecasts are evidence, business risk is deterministic logic, scenario
+> inventory is explicitly supplied by the user, and the human remains responsible for the final
+> action.
 
-```text
+## Platform flow
+
+~~~text
 M5 retail data
       |
       v
@@ -18,174 +23,219 @@ GCS -> BigQuery RAW -> dbt STAGING -> SILVER -> GOLD
 Leakage-safe ML features
       |
       v
-LightGBM recursive demand forecasting
+Global LightGBM Poisson model -> recursive 28-day forecast
+      |                         -> TreeSHAP explanation
+      |                         -> model-assumption demand stress band
+      v
+FastAPI Forecast Service (private Cloud Run)
       |
       v
-Portable cloud training container
-      |
-      +--> Cloud Run Jobs       [current quota-friendly backend]
-      +--> Vertex AI Training   [target backend when quota-eligible]
-      |
+Decision Intelligence
+      |--> inventory scenario simulation
+      |--> deterministic stockout / safety-stock risk
+      |--> counterfactual scenario comparison
+      |--> cost-aware reorder scenario optimization
       v
-GCS artifacts + Vertex AI Experiments
-      |
+Gemini + LangGraph Decision Copilot
+      |--> Forecast API
+      |--> allowlisted BigQuery analytics
+      |--> demand anomaly detection
+      |--> model metadata + curated RAG
+      |--> thread-scoped scenario memory
+      |--> human approval
       v
-FastAPI / Cloud Run forecasting service
-      |
-      v
-LangGraph + Gemini decision agent
-      |
-      +--> Forecast API
-      +--> BigQuery analytics
-      +--> Model info
-      +--> RAG knowledge
-      +--> Human approval
-```
+React Operator Console
+Morning Brief | Forecasts | Decision Lab | Copilot | Approvals | Monitoring
+~~~
 
-## Roadmap
+The product journey is:
 
-- **V0 — Foundation:** repository, Python project, configuration and dependency management.
-- **V1 — Data Engineering:** GCS, BigQuery, dbt layers, tests and marts.
-- **V2 — Machine Learning:** temporal validation, baselines, LightGBM and recursive forecasting.
-- **V3 — MLOps:** portable cloud training, experiments, artifacts, quality gate and Model Registry;
-  Vertex AI remains the target training backend and Cloud Run Jobs is the quota-friendly fallback.
-- **V4 — Serving & Cloud:** FastAPI, Cloud Run contract, Artifact Registry and CI/CD.
-- **V5 — Agentic AI:** LangGraph, Gemini, safe tools, RAG and human-in-the-loop workflows.
-- **V6 — Production Quality:** durable agent state, observability, orchestration, monitoring, IaC
-  and final portfolio demo.
+**Observe -> Forecast -> Explain -> Stress -> Simulate -> Compare -> Recommend -> Human decision**
 
-## Current milestone
+## What an operator can ask
 
-**V5 — Agentic AI**
+- “What demand exceptions deserve attention today?”
+- “For FOODS_1_001 in CA_1, I have 20 units and 10 arrive in 3 days. Is that enough?”
+- “Using the same scenario, what if delivery is delayed by 5 days?”
+- “What is the smallest grounded change that removes the stockout risk?”
+- “Given these explicit cost assumptions and MOQ, which additional quantity has the lowest
+  scenario cost?”
 
-Implemented code paths now include:
+M5 does **not** contain true inventory positions, purchase orders or supplier lead times. RetailOps
+AI therefore treats those values as explicit scenario inputs and never presents them as observed
+retailer facts.
 
-- immutable GCS landing and BigQuery RAW ingestion;
-- dbt STAGING, SILVER and GOLD warehouse layers;
-- leakage-aware 28-day forecasting contract;
-- naive and seasonal baselines with MAE, RMSE and bottom-level mean RMSSE;
-- global LightGBM Poisson model with recursive inference;
-- backend-agnostic LightGBM training container shared by local, Cloud Run Jobs and Vertex AI;
-- Vertex AI custom-training, experiment, artifact and quality-gated registry code;
-- Cloud Run Jobs deployment/execution helpers for quota-friendly cloud training;
-- FastAPI business forecasting API with series-scoped BigQuery reads;
-- Cloud Run container/build/deployment contracts and GitHub Actions CI;
-- LangGraph bounded plan-execute-synthesize workflow;
-- schema-constrained Gemini planner and grounded answer synthesis;
-- authenticated Forecast API tool for private Cloud Run;
-- allowlisted, parameterized BigQuery analytics tools with a bytes-billed ceiling;
-- model-info tool;
-- curated RAG with lexical and Vertex-embedding retrieval backends;
-- tool-call deduplication and a maximum tool-step budget;
-- LangGraph human approval interrupts for business action proposals;
-- separate Agent API with query/resume endpoints;
-- container build contract for the V5 service;
-- GitHub Actions validation under Python 3.12 with Ruff and 62 passing tests.
+## Implemented capabilities
 
-V3, V4 and V5 cloud code must not be described as cloud-validated until their real GCP executions
-complete successfully.
+### Data engineering
+- immutable GCS landing;
+- BigQuery RAW ingestion;
+- dbt STAGING, SILVER and GOLD layers;
+- warehouse integrity tests and analytical marts;
+- leakage-aware temporal ML contracts.
 
-## Engineering principles
+### Machine learning
+- fixed temporal train / validation / test windows;
+- naive, seasonal-7 and seasonal-28 baselines;
+- global LightGBM Poisson model;
+- recursive 28-day inference without hidden future labels;
+- MAE, RMSE and bottom-level mean RMSSE;
+- TreeSHAP using the same recursive feature state as the forecast.
 
-- LLMs orchestrate and explain; they are never the source of retail facts or model predictions.
-- The agent cannot generate arbitrary SQL; analytics are allowlisted and parameterized.
-- Demand forecasts are not automatically order quantities.
-- M5 does not contain true inventory; simulated inventory must always be labelled as simulated.
-- Temporal ML features respect as-of-time availability and never use future target information.
-- Recursive forecasts append model predictions, not hidden future labels.
-- Model promotion is gated by measured validation quality.
-- Local, Vertex and Cloud Run paths share the forecasting implementation.
-- Training compute is decoupled from the Forecast API contract consumed by the agent.
-- Secrets and service-account keys are never committed.
-- Expensive or mutating actions require explicit guardrails.
-- Human approval does not imply that the V5 agent changed an external system; it has no mutation
-  tool.
+### Decision intelligence
+- current stock, incoming PO, lead time and safety stock as explicit scenario inputs;
+- projected inventory trajectory;
+- stockout and safety-stock-breach detection;
+- deterministic counterfactuals for more units, a larger PO or earlier PO arrival;
+- approximate q10/q90 Poisson model-assumption demand stress band;
+- optional cost-aware scenario optimizer using explicit order/holding/stockout costs, MOQ and
+  order increments.
+
+The uncertainty band is a **stress band**, not an empirically calibrated coverage guarantee. The
+cost optimizer is advisory and is not an ERP purchasing engine.
+
+### Agentic AI
+- Gemini structured planning and grounded synthesis;
+- LangGraph bounded plan -> execute -> synthesize workflow;
+- private authenticated Forecast API tool;
+- allowlisted parameterized BigQuery tools with no arbitrary LLM SQL;
+- curated RAG;
+- deterministic inventory-decision tool;
+- thread-scoped active-scenario memory for conversational what-if analysis;
+- demand-anomaly analytics;
+- per-tool and Gemini-stage latency traces;
+- human-in-the-loop approval;
+- no mutating operational tool.
+
+### Operator console
+- React / TypeScript;
+- Morning Decision Brief for demand exceptions and drift context;
+- 28-day Forecast workspace;
+- Decision Lab with TreeSHAP, inventory trajectory, uncertainty stress and counterfactuals;
+- cost-aware scenario optimization;
+- AI Copilot and approval center;
+- monitoring and architecture views.
+
+### Production / MLOps
+- Docker, Artifact Registry and Cloud Build;
+- Cloud Run Jobs for quota-friendly model training;
+- private FastAPI services on Cloud Run;
+- GCS model artifacts and quality-gated Vertex AI Model Registry versions;
+- Cloud SQL PostgreSQL checkpointer backend;
+- Secret Manager, IAM, Workload Identity Federation and IAP;
+- GitHub Actions CI and dual-service Cloud Run CD;
+- Terraform for core IAM, WIF, Cloud SQL and monitoring resources;
+- request IDs and latency logging;
+- authenticated post-deploy Forecast API smoke test.
 
 ## Validated forecasting result
 
-A real BigQuery-backed local run used a 90-day lookback, 100 LightGBM boosting rounds, and
+A real BigQuery-backed run used a 90-day lookback, 100 LightGBM boosting rounds and
 2,744,100 training rows:
 
-```text
+~~~text
 MAE:        1.076782
 RMSE:       2.175634
 mean RMSSE: 0.771130
-```
+~~~
 
 Reference baselines on the same 28-day validation window:
 
-```text
+~~~text
 naive_last         MAE 1.350344 | RMSE 3.300666 | mean RMSSE 0.952306
 seasonal_naive_7   MAE 1.232355 | RMSE 2.759459 | mean RMSSE 0.975596
 seasonal_naive_28  MAE 1.258023 | RMSE 2.836503 | mean RMSSE 1.005899
-```
+~~~
 
 The project reports unweighted bottom-level mean RMSSE, not official hierarchical M5 WRMSSE.
 
-## V5 agent flow
+## Cloud validation status
 
-```text
-Question
-  |
-  v
-Gemini structured planner
-  |
-  v
-LangGraph (max 3 tool rounds)
-  |
-  +--> POST /v1/forecast          [deterministic ML]
-  +--> BigQuery allowlisted tools [warehouse facts]
-  +--> GET /v1/model              [model metadata]
-  +--> RAG                        [policy / limitations]
-  |
-  v
-Gemini grounded synthesis
-  |
-  +--> answer only ------------------------------> response
-  |
-  +--> business action proposal -> HITL interrupt
-                                      |
-                               approve / reject
-                                      |
-                                      v
-                                   response
-```
+Validated on GCP before V7:
 
-The V5 graph deliberately has no write/action tool. The first HITL implementation uses an in-memory
-LangGraph checkpointer for local/CI validation; durable resumable state across Cloud Run instances is
-a V6 requirement.
+- BigQuery/dbt data platform executed end to end;
+- real BigQuery-backed LightGBM training/evaluation;
+- full Cloud Run Jobs training run;
+- quality-gated Vertex AI Model Registry version registration;
+- private Forecast API with real 28-day BigQuery-backed inference;
+- Gemini/LangGraph Agent with Forecast API, BigQuery analytics, RAG and HITL;
+- request-ID correlation and API latency in Cloud Logging;
+- PostgreSQL checkpointer backend active through Cloud SQL;
+- React console and Decision Lab deployed and browser-validated;
+- dual-service GitHub Actions -> Cloud Build -> Cloud Run deployment validated;
+- IAP enabled for the operator console.
 
-See `docs/agentic_ai.md` for the full trust and tool contract.
+Important boundaries:
+
+- **Vertex AI Custom Training is not claimed as validated** because project quota is insufficient;
+  Cloud Run Jobs is the validated training backend.
+- **Cross-revision interrupt -> deploy -> resume durability is not claimed as validated** until the
+  dedicated restart-resume test succeeds.
+- V7 additions are implemented in code and must pass CI and cloud rollout before being described as
+  cloud-validated.
+
+## V7 — Decision Intelligence
+
+V7 adds:
+- conversational scenario memory;
+- visible counterfactuals;
+- demand stress bands;
+- demand-anomaly analytics;
+- validation-vs-test demand-distribution drift;
+- Morning Decision Brief;
+- detailed latency traces;
+- explicit cost-aware reorder scenario optimization;
+- post-deploy Forecast API smoke testing.
+
+See **docs/v7_decision_intelligence.md** for design boundaries.
+
+## Trust boundaries
+
+- LLMs orchestrate and explain; they do not produce retail facts or ML predictions.
+- The agent cannot generate arbitrary SQL.
+- Demand forecasts are not automatically order quantities.
+- Inventory, PO, lead time and safety stock are scenario inputs, never M5 inventory facts.
+- Economic optimization inputs are scenario assumptions, never inferred business truth.
+- Recursive forecasts append predictions, not future labels.
+- Model promotion is quality-gated.
+- Secrets and service-account keys are never committed.
+- Human approval authorizes human follow-up only; no operational system is mutated.
 
 ## API surfaces
 
-Forecasting service:
+Forecast service:
 
-```text
+~~~text
 GET  /healthz
 GET  /readyz
 GET  /v1/model
 POST /v1/forecast
-```
+POST /v1/explain
+~~~
 
-Agent service:
+Agent / console service:
 
-```text
+~~~text
 GET  /healthz
 GET  /readyz
 GET  /v1/agent/capabilities
 POST /v1/agent/query
 POST /v1/agent/resume
-```
 
-## Status
+GET  /v1/console/overview
+POST /v1/console/analytics
+POST /v1/console/forecast
+POST /v1/console/inventory-scenario
+POST /v1/console/explain
+GET  /v1/console/morning-brief
+GET  /v1/console/drift
+GET  /v1/ops/status
+~~~
 
-- **V1 Data Engineering:** real GCP execution validated end to end.
-- **V2 Machine Learning:** real BigQuery-backed LightGBM run validated and beats all implemented
-  baselines.
-- **V3 MLOps:** portable training code implemented; Cloud Run Jobs fallback added for current quota
-  constraints; real cloud training execution and Vertex AI Custom Training validation remain pending.
-- **V4 Serving & Cloud:** code and CI validated; real Cloud Run execution pending.
-- **V5 Agentic AI:** code and CI validated (Ruff + 62 tests under Python 3.12); real Gemini,
-  Vertex-embedding, private Cloud Run tool calls, BigQuery agent queries, and cloud HITL execution
-  remain pending.
+## Engineering discipline
+
+CI validates Python 3.12 with Ruff/Pytest and builds the React console with TypeScript/Vite.
+Production CD only runs from a CI-successful main revision, builds immutable images and rolls out
+both Cloud Run services. The Forecast API then receives an authenticated post-deploy readiness and
+real 28-point inference smoke test. The Agent Console remains behind IAP; automated HTTP smoke
+testing should use a dedicated IAP-authorized test principal rather than weakening that boundary.
