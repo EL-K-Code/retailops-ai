@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -79,6 +80,43 @@ class ProductionAgentRuntime:
 
     def analytics(self, request: AnalyticsRequest) -> dict[str, Any]:
         return self.analytics_tool.run(request)
+
+    def dashboard_overview(self, *, split: str, request_id: str) -> dict[str, Any]:
+        """Load the operator dashboard in parallel to keep the home screen responsive."""
+        requests = {
+            "sales_summary": AnalyticsRequest(operation="sales_summary", split=split),
+            "store_summary": AnalyticsRequest(operation="store_summary", split=split),
+            "top_products": AnalyticsRequest(operation="top_products", split=split, top_n=8),
+            "baseline_metrics": AnalyticsRequest(operation="baseline_metrics", split=split),
+            "daily_trend": AnalyticsRequest(operation="daily_trend", split=split),
+            "category_summary": AnalyticsRequest(
+                operation="category_summary",
+                split=split,
+                top_n=6,
+            ),
+            "demand_context": AnalyticsRequest(operation="demand_context", split=split),
+            "weekday_profile": AnalyticsRequest(operation="weekday_profile", split=split),
+        }
+        with ThreadPoolExecutor(max_workers=len(requests) + 2) as pool:
+            futures = {
+                name: pool.submit(self.analytics, analytics_request)
+                for name, analytics_request in requests.items()
+            }
+            model_future = pool.submit(self.model_info, request_id=request_id)
+            reference_future = (
+                pool.submit(
+                    self.analytics,
+                    AnalyticsRequest(operation="sales_summary", split="validation"),
+                )
+                if split == "test"
+                else None
+            )
+            result = {name: future.result() for name, future in futures.items()}
+            result["model"] = model_future.result()
+            result["reference_sales_summary"] = (
+                reference_future.result() if reference_future is not None else None
+            )
+        return {"split": split, **result}
 
     def forecast(self, request: ForecastToolRequest, *, request_id: str) -> dict[str, Any]:
         return self.forecast_client.forecast(
